@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}How it works · OAuth App Readiness{% endblock %}
+{% block main %}
+<div class="wrap">
+  <article class="prose">
+    <h1>How the guides are made</h1>
+    <p class="lede muted" style="font-size:19px;margin-top:12px">Every guide answers one question: what stands between you and letting any of your users connect this app through your agent?</p>
+
+    <h2>Three objects people mix up</h2>
+    <ul>
+      <li><strong>The OAuth app</strong> is registered once with the provider. It has a client ID and secret, redirect URIs and allowed scopes, and its name is what your users see on the consent screen. This is the thing that may need approval.</li>
+      <li><strong>Your auth config</strong> in Composio says which OAuth app and scopes your integration uses. Composio provides a managed OAuth app for some toolkits; for the rest you bring your own and register Composio's callback, <code>{{ REDIRECT_URI }}</code>, as the redirect URI.</li>
+      <li><strong>A connection</strong> is one end user authorizing their account. One OAuth app serves all of them. Approval problems show up here: an "unverified app" screen, a 100-user cap, or an admin who must approve the app.</li>
+    </ul>
+
+    <h2>Difficulty tiers</h2>
+    <p>The tier describes the path a typical AI-agent product needs to let any customer connect with the scopes an agent realistically needs, not the easiest possible path.</p>
+    <div class="tier-table">
+      {% for t in range(1,5) %}<div><strong class="tier tier-{{ t }}">{{ TIER_LABELS[t] }}</strong><span>{{ TIER_BLURBS[t] }}</span></div>{% endfor %}
+    </div>
+
+    <h2>How sure we are</h2>
+    <p>Every step, requirement and blocker carries one of four labels, and the label is enforced in code, not left to the writer.</p>
+    <div class="tier-table">
+      {% for k in ['tested','sourced','inferred','uncertain'] %}<div><span class="ev ev-{{ k }}">{{ EVIDENCE_LABELS[k] }}</span><span>{{ EVIDENCE_HELP[k] }}</span></div>{% endfor %}
+    </div>
+    <p style="margin-top:12px">"Tested live" can only cite a probe the agent ran. "From official source" must cite a fetched page; if every cited page is a forum or blog, it drops to "uncertain". Review timelines are usually anecdotal, and the guides say so.</p>
+
+    <h2>What the agent does</h2>
+    <ol>
+      <li><strong>Identify the provider</strong> from a name or URL: official domains, developer console, a search plan.</li>
+      <li><strong>Research</strong> with several targeted searches covering registration, scopes, review, partner programs and real-world timelines. Official docs are ranked first.</li>
+      <li><strong>Read</strong> each page and extract only facts it states, each with a short supporting phrase so a reviewer can find it.</li>
+      <li><strong>Probe live</strong> while reading: OAuth/OIDC discovery metadata, the developer console (is it behind a login?), Composio's toolkit page, and the real authorize endpoint called with a fake client ID and Composio's redirect URI.</li>
+      <li><strong>Write</strong> the guide from the extracted facts and probe results only.</li>
+      <li><strong>Verify</strong> with a separate pass that checks each claim against its sources, downgrades anything overclaimed and records corrections. Then code-level guards remove citations to pages the agent never read.</li>
+    </ol>
+
+    <h2>Where an agent stops</h2>
+    <p>Signing in to a developer console, accepting terms, verifying a domain in DNS, paying for a security assessment, recording a demo video and signing partner agreements need a person with the account. The guides mark these steps "You do this" and give you everything the agent could prepare: field values, redirect URIs, scope lists and justification text.</p>
+
+    <h2>Limits</h2>
+    <ul>
+      <li>Probes run without credentials, so they can prove an endpoint exists and how it treats unknown clients, but not that your app would be approved.</li>
+      <li>Some providers block automated requests. A blocked probe counts as no evidence and is shown as inconclusive.</li>
+      <li>Provider rules change. Each guide shows the date it was checked, and you can re-run the investigation at any time.</li>
+    </ul>
+  </article>
+</div>
+{% endblock %}

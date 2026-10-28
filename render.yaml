@@ -1,0 +1,19 @@
+# One-click deploy on Render: New > Blueprint > point at this repo.
+# Set the secret env vars in the Render dashboard (they are `sync: false`, never stored in git).
+services:
+  - type: web
+    name: oauth-app-readiness
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: MODEL
+        value: anthropic:claude-sonnet-5-5
+      - key: FAST_MODEL
+        value: anthropic:claude-haiku-5-5
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: COMPOSIO_API_KEY
+        sync: false

@@ -1,3 +1,17 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+data/guides/generated/*.json
+!data/guides/generated/.gitkeep
+.DS_Store
+
+# --- GitHub Python template ---
 # Logs
 logs
 *.log

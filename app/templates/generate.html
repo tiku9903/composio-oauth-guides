@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Investigate an app · OAuth App Readiness{% endblock %}
+{% block main %}
+<div class="wrap">
+  <div class="gen">
+    <div>
+      <h1 id="title">{% if q %}Investigating {{ q }}{% else %}Investigate any app{% endif %}</h1>
+      <p class="lede muted" style="font-size:18px;max-width:60ch;margin-top:12px">An agent finds the provider's developer docs, reads them, tries the live OAuth endpoints, writes a guide, then has a separate verifier check every claim against its sources.</p>
+      {% if not llm_ready %}
+      <div class="notice warn" style="margin-top:18px"><strong>Live investigation is off on this server.</strong> Set <code>ANTHROPIC_API_KEY</code> (or another provider key and <code>MODEL</code>) and restart. The library still works without it.</div>
+      {% endif %}
+      <form class="lookup" id="form" {% if q %}hidden{% endif %}>
+        <label for="q" style="position:absolute;left:-9999px">App name or website</label>
+        <input id="q" name="q" value="{{ q }}" placeholder="App name or website, e.g. Pipedrive or cal.com" required autocomplete="off">
+        <button class="btn" type="submit" {% if not llm_ready %}disabled{% endif %}>Investigate</button>
+      </form>
+      <div id="status" class="hint" aria-live="polite"></div>
+      <ol class="timeline" id="log" aria-live="polite"></ol>
+      <div id="result" style="margin-top:20px"></div>
+    </div>
+    <aside>
+      <div class="side-box" style="background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:16px 18px">
+        <h3 style="font-size:15px;margin-bottom:10px">Pages being read</h3>
+        <ol class="sources" id="srcs"><li class="muted small" style="display:block">None yet</li></ol>
+      </div>
+      <p class="small muted" style="margin-top:14px">Model: {{ model }}. Search: {{ search_backend }}. Probes are read-only and never use your credentials.</p>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const q0 = {{ q|tojson }};
+const ready = {{ 'true' if llm_ready else 'false' }};
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function add(ev) {
+  const li = document.createElement("li");
+  li.className = "k-" + ev.kind + (ev.probe ? (ev.probe.ok === null ? " inconclusive" : ev.probe.ok === false ? " negative" : "") : "");
+  li.innerHTML = `<span class="t">${(ev.t ?? 0).toFixed(1)}s</span><span class="dot"></span><span class="m">${esc(ev.message)}</span>`;
+  $("#log").appendChild(li);
+  if (ev.sources) {
+    $("#srcs").innerHTML = ev.sources.map(s =>
+      `<li><span class="sid">${esc(s.sid)}</span><span><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a><span class="kind">${esc(s.kind.replace("_"," "))}</span></span></li>`).join("");
+  }
+}
+
+async function start(q) {
+  $("#form").hidden = true;
+  $("#title").textContent = "Investigating " + q;
+  $("#status").innerHTML = '<span class="pulse"></span>Working. This usually takes 1–3 minutes; you can leave this tab open.';
+  history.replaceState(null, "", "/generate?q=" + encodeURIComponent(q));
+  const body = new FormData(); body.append("q", q);
+  const r = await fetch("/api/generate", { method: "POST", body });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ detail: r.statusText }));
+    $("#status").textContent = "";
+    add({ kind: "error", message: err.detail || "Could not start", t: 0 });
+    $("#form").hidden = false;
+    return;
+  }
+  const job = await r.json();
+  const es = new EventSource(`/api/jobs/${job.id}/events`);
+  es.addEventListener("progress", (m) => {
+    const ev = JSON.parse(m.data);
+    add(ev);
+    if (ev.kind === "complete") {
+      $("#status").textContent = "";
+      $("#result").innerHTML = `<a class="btn" href="/guides/${esc(ev.slug)}">Open the guide</a> <span class="muted small" style="margin-left:10px">Opening automatically…</span>`;
+      setTimeout(() => location.href = "/guides/" + ev.slug, 2200);
+    }
+    if (ev.kind === "error") {
+      $("#status").textContent = "";
+      $("#result").innerHTML = `<p class="muted">The investigation stopped. Check the server has a valid model API key, then try again.</p><a class="btn ghost" href="/generate">Try another app</a>`;
+    }
+  });
+  es.addEventListener("end", () => es.close());
+  es.onerror = () => { /* EventSource reconnects and the server replays the log */ };
+}
+
+$("#form").addEventListener("submit", (e) => { e.preventDefault(); const q = $("#q").value.trim(); if (q) start(q); });
+if (q0 && ready) start(q0);
+else if (q0) $("#form").hidden = false;
+</script>
+{% endblock %}

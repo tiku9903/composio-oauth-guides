@@ -1,0 +1,453 @@
+{
+  "slug": "linear",
+  "app_name": "Linear",
+  "website": "https://linear.app",
+  "category": "Project management",
+  "tagline": "Self-serve OAuth app, no review to go public; plan for 24 h tokens with rotating refresh tokens",
+  "tier": 1,
+  "tier_reason": "A workspace admin creates the OAuth app in settings and switches it to public distribution so other workspaces can install it. No review is described for standard user-actor OAuth. Listing in the Integration Directory is a separate, selective, optional step. Agent-style (actor=app) apps for other workspaces appear to need directory submission.",
+  "time": {
+    "active_effort": "15-30 min",
+    "active_hours_low": 0.25,
+    "active_hours_high": 0.5,
+    "wait": "none (directory listing, if wanted, has no published timeline)",
+    "wait_days_low": 0,
+    "wait_days_high": 0,
+    "summary": "A Linear OAuth app is a 20-minute settings form with no approval, so customers can connect the same day.",
+    "evidence": "inferred",
+    "source_ids": [
+      "S1",
+      "S2",
+      "S4"
+    ]
+  },
+  "composio": {
+    "managed_oauth": "unknown",
+    "toolkit_slug": "linear",
+    "note": "Composio says every OAuth toolkit has a managed app, but its managed-auth list didn't render and the Linear pages don't confirm one. Composio's Linear guide walks through bringing your own OAuth2 app.",
+    "evidence": "uncertain",
+    "source_ids": [
+      "S13",
+      "S12",
+      "S11"
+    ]
+  },
+  "oauth": {
+    "developer_console_url": "https://linear.app/settings/api/applications/new",
+    "docs_url": "https://linear.app/developers/oauth-2-0-authentication",
+    "authorize_url": "https://linear.app/oauth/authorize",
+    "token_url": "https://api.linear.app/oauth/token",
+    "oauth_version": "OAuth 2.0 authorization code (plus client_credentials for app-only)",
+    "pkce": "Supported (plain or S256). With PKCE, client_secret is optional at token exchange.",
+    "refresh_tokens": "Access tokens last 24 h. Every token response includes a refresh token, and each refresh rotates both (30-minute replay grace window). All OAuth apps were moved to this refresh system on 2026-04-01. Client-credentials tokens last 30 days with no refresh token.",
+    "scopes_note": "`read` is always included. Prefer `issues:create` and `comments:create` over broad `write`. Request `admin` only if you must, and `actor=app` cannot request `admin`. `app:assignable` and `app:mentionable` apply to agent apps only.",
+    "example_scopes": [
+      "read",
+      "write",
+      "issues:create",
+      "comments:create"
+    ],
+    "account_needed": "A Linear workspace where you are an admin. Linear recommends a dedicated workspace to own the app, since all its admins can manage it."
+  },
+  "start_here": "In a Linear workspace you admin, open linear.app/settings/api/applications/new. Create the app with callback URL https://backend.composio.dev/api/v3/toolkits/auth/callback and turn on public distribution.",
+  "steps": [
+    {
+      "phase": "prepare",
+      "title": "Pick the owning workspace",
+      "owner": "you",
+      "effort": "5 min",
+      "detail": "Every admin in the workspace that owns the app can access its settings and secrets, so Linear recommends a **dedicated workspace** for it. Free plans work for creating apps.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1",
+        "S6"
+      ],
+      "evidence_note": "Dedicated-workspace advice is sourced. That a free plan suffices is inferred."
+    },
+    {
+      "phase": "prepare",
+      "title": "Choose actor=user vs actor=app",
+      "owner": "you_with_agent",
+      "effort": "5 min",
+      "detail": "- **actor=user** (default): actions appear as the connecting user. Each user authorizes individually. This fits a per-user agent via Composio.\n- **actor=app**: actions appear as the app (a non-billable app user). Install is workspace-wide, so **a workspace admin must complete it**, and `admin` scope is not allowed. Required for agent features (`app:assignable`, `app:mentionable`).\n\nComposio's documented flow is standard user OAuth. Whether you can pass `actor=app` through a Composio auth config is unconfirmed.",
+      "agent_help": "Map your agent's actions to the right actor and scopes.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1",
+        "S3"
+      ]
+    },
+    {
+      "phase": "register",
+      "title": "Create the OAuth application",
+      "owner": "you",
+      "effort": "10 min",
+      "detail": "**Settings > API > OAuth applications > +**, or go directly to `linear.app/settings/api/applications/new`.\n\n- **Application name**: 2-80 chars, cannot contain \"Linear\"\n- **Developer name** and **Developer URL**\n- **Callback URLs**: `https://backend.composio.dev/api/v3/toolkits/auth/callback` (1-32 allowed)\n- **Public** / distribution: turn **on** so other workspaces can install it (default is private to this workspace)\n- **Client credentials**: leave off unless you need app-only server tokens\n- **Webhooks**: optional\n\nClick **Create**, then copy the **Client ID** and **Client Secret**.",
+      "agent_help": "Generate a manifest or a prefilled create-app URL so you only review and click Create.",
+      "links": [
+        "https://linear.app/settings/api/applications/new"
+      ],
+      "evidence": "sourced",
+      "source_ids": [
+        "S1",
+        "S2",
+        "S6",
+        "S9"
+      ]
+    },
+    {
+      "phase": "configure",
+      "title": "Create the Composio custom auth config",
+      "owner": "you_with_agent",
+      "effort": "5 min",
+      "detail": "In Composio, create a **Linear** auth config using your own OAuth2 credentials. Paste the Client ID and Secret. Composio pre-selects `admin`, `read`, `write`, `issues:create` and `comments:create`; **remove `admin`** unless you truly need it. The auth config's `oauth_redirect_uri` must match the Linear callback URL exactly.",
+      "agent_help": "Create the auth config via the Composio SDK/API with the trimmed scope list.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S9",
+        "S11"
+      ]
+    },
+    {
+      "phase": "configure",
+      "title": "Account for rotating 24 h tokens",
+      "owner": "you_with_agent",
+      "effort": "10 min",
+      "detail": "Access tokens expire after **24 h**, and each refresh issues a **new refresh token**, after which the old one stops working. Concurrent refreshes using a stale token produce `invalid_grant`. Composio stores and refreshes tokens for connected accounts, but confirm a connection still works after 24 h. Don't refresh Linear tokens yourself in parallel with Composio.",
+      "agent_help": "Re-test a connection after more than 24 h and report the result.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1",
+        "S7"
+      ],
+      "evidence_note": "Linear behaviour is sourced. Composio's refresh handling for Linear is inferred."
+    },
+    {
+      "phase": "test",
+      "title": "Connect a second workspace",
+      "owner": "you_with_agent",
+      "effort": "10 min",
+      "detail": "Run a Composio connection from a **different** Linear workspace to prove public distribution works, then run read and issue-create tool calls. Add `prompt=consent` if users need to connect more than one workspace.",
+      "agent_help": "Run tool calls through Composio and check issues are created under the expected actor.",
+      "evidence": "inferred",
+      "source_ids": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "phase": "launch",
+      "title": "Directory listing (optional)",
+      "owner": "you",
+      "effort": "1-2 h if pursued",
+      "detail": "Users don't need the Linear Integration Directory to connect a public OAuth app. Listing is for discoverability and is selective: Linear accepts apps from formal companies and rejects scripts, hobby and low-effort apps. You'll need a form, two 320x320 icons and 1-3 1600x1000 images. No timeline is published. Exception: Linear's agent guide says agents offered to other workspaces should be submitted to the directory.",
+      "agent_help": "Draft listing copy and the asset checklist.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S4",
+        "S3",
+        "S2"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "title": "Workspace admin to create the app",
+      "severity": "important",
+      "detail": "OAuth apps are created and managed in workspace settings, and all admins of that workspace can access them.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1"
+      ]
+    },
+    {
+      "title": "Public distribution for other workspaces",
+      "severity": "blocker",
+      "detail": "Distribution defaults to private, which limits the app to its own workspace. Switch to public so customer workspaces can authorize.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S2",
+        "S6"
+      ]
+    },
+    {
+      "title": "Admin install for actor=app",
+      "severity": "important",
+      "applies_when": "Using actor=app (agents / service-account style)",
+      "detail": "App-actor installs are workspace-scoped and need a workspace admin to complete them. `admin` scope is not allowed.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S3"
+      ]
+    },
+    {
+      "title": "Exact redirect_uri",
+      "severity": "blocker",
+      "detail": "The `redirect_uri` must be one of the app's registered callback URLs and must be identical in the authorize and token requests. Up to 32 URIs are allowed.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "title": "Rate limits",
+      "severity": "minor",
+      "detail": "OAuth apps get 5,000 requests per hour and 2,000,000 complexity points per hour, per user or app user.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S5"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "title": "Other workspaces can't install",
+      "symptom": "Users outside your workspace get an error or can't find the app during consent.",
+      "what_to_do": "Set the app's distribution to Public in its settings.",
+      "evidence": "inferred",
+      "source_ids": [
+        "S2",
+        "S6"
+      ]
+    },
+    {
+      "title": "invalid_grant on refresh",
+      "symptom": "Connection breaks after a day; refresh returns invalid_grant.",
+      "what_to_do": "A stale or rotated refresh token was reused, the app was uninstalled, or the secret was rotated. Make sure only one component refreshes, and have the user reconnect if it persists.",
+      "evidence": "uncertain",
+      "source_ids": [
+        "S7",
+        "S1"
+      ],
+      "evidence_note": "Causes come from a third-party blog. Rotation and the grace window are official."
+    },
+    {
+      "title": "Install blocked for non-admins",
+      "symptom": "A member can't finish installing an actor=app integration.",
+      "what_to_do": "A workspace admin has to complete the install. Alternatively, use actor=user.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S3"
+      ]
+    },
+    {
+      "title": "Scope too broad / admin",
+      "symptom": "Customers' security teams balk at the consent screen.",
+      "what_to_do": "Remove `admin`, and replace `write` with `issues:create` and `comments:create` where possible.",
+      "evidence": "inferred",
+      "source_ids": [
+        "S1",
+        "S11"
+      ]
+    }
+  ],
+  "agent_can": [
+    "Choose actor and minimal scopes for your tools",
+    "Generate an OAuth app manifest or prefilled create-app URL",
+    "Create the Composio auth config via SDK",
+    "Test connections from multiple workspaces and verify refresh after 24 h",
+    "Draft Integration Directory listing copy"
+  ],
+  "you_must": [
+    "Log into Linear as a workspace admin and create the app",
+    "Store the client secret",
+    "Switch distribution to public",
+    "Complete actor=app installs as a workspace admin (customers' admins in their workspaces)",
+    "Submit the directory form and assets, if listing"
+  ],
+  "ready_to_paste": [
+    {
+      "label": "Callback URL (Composio custom auth)",
+      "value": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+      "note": "Confirmed in Composio docs, 2026-10-28. Composio's composio.dev/auth/linear page still shows the outdated https://backend.composio.dev/api/v1/auth-apps/add, so don't use that."
+    },
+    {
+      "label": "Suggested scopes",
+      "value": "read,issues:create,comments:create",
+      "note": "Add `write` only for updates beyond issues and comments (e.g. projects, labels). Avoid `admin`."
+    },
+    {
+      "label": "Application description",
+      "value": "<Product>'s AI assistant reads your Linear issues and projects and can create issues and comments on your behalf."
+    },
+    {
+      "label": "Prefilled create URL pattern",
+      "value": "https://linear.app/settings/api/applications/new?<manifest URL params>",
+      "note": "See Linear's OAuth app manifests doc for parameter names. Redirect URI params repeat per URI."
+    }
+  ],
+  "open_questions": [
+    "Does Composio offer a managed Linear OAuth app today?",
+    "Can a Composio auth config pass actor=app to Linear's authorize URL?",
+    "What is the lifetime of a Linear refresh token when unused? It isn't documented.",
+    "Is directory submission strictly required for public agent (actor=app) apps, or only recommended?"
+  ],
+  "sources": [
+    {
+      "id": "S1",
+      "title": "Linear: OAuth 2.0 authentication",
+      "url": "https://linear.app/developers/oauth-2-0-authentication.md",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S2",
+      "title": "Linear: OAuth app manifests",
+      "url": "https://linear.app/developers/oauth-app-manifests",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S3",
+      "title": "Linear: Agents — getting started",
+      "url": "https://linear.app/developers/agents.md",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S4",
+      "title": "Linear: Integration directory",
+      "url": "https://linear.app/developers/integration-directory",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S5",
+      "title": "Linear: Rate limiting",
+      "url": "https://linear.app/developers/rate-limiting.md",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S6",
+      "title": "Nango: Register your own Linear OAuth app",
+      "url": "https://www.nango.dev/docs/api-integrations/linear/how-to-register-your-own-linear-api-oauth-app.md",
+      "kind": "community",
+      "accessed": "2026-10-28",
+      "note": "Third-party integration vendor doc; mentions Oct 2025 short-lived token rollout and the Refresh Token toggle"
+    },
+    {
+      "id": "S7",
+      "title": "Nango blog: Linear refresh token invalid_grant",
+      "url": "https://nango.dev/blog/linear-oauth-refresh-token-invalid-grant",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S8",
+      "title": "WorkOS: Refresh token behaviour across fourteen providers",
+      "url": "https://workos.com/blog/refresh-token-behavior-across-fourteen-providers",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S9",
+      "title": "Composio: Custom auth configs",
+      "url": "https://docs.composio.dev/docs/custom-auth-configs",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S10",
+      "title": "Composio: White-labeling (direct execution)",
+      "url": "https://docs.composio.dev/docs/auth-configuration/white-labeling.md",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S11",
+      "title": "Composio: How to create Linear OAuth2 credentials",
+      "url": "https://composio.dev/auth/linear",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28",
+      "note": "Still lists the outdated v1 callback URL"
+    },
+    {
+      "id": "S12",
+      "title": "Composio KB: Linear toolkit",
+      "url": "https://docs.composio.dev/kb/toolkit/linear.md",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S13",
+      "title": "Composio: Managed vs custom auth",
+      "url": "https://docs.composio.dev/docs/custom-app-vs-managed-app",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S14",
+      "title": "Linear: OAuth 2.0 authentication",
+      "url": "https://linear.app/developers/oauth-2-0-authentication",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    }
+  ],
+  "probes": [
+    {
+      "name": "Authorize URL with dummy client_id",
+      "target": "https://linear.app/oauth/authorize?client_id=test_invalid_client&response_type=code&scope=read&redirect_uri=https://backend.composio.dev/api/v3/toolkits/auth/callback",
+      "method": "WebFetch GET (no JS)",
+      "observed": "Got the Linear web app shell (title 'Linear', body 'Loading…'). No server-side error or login form; validation happens client-side. A curl retry was blocked by the egress proxy (403 CONNECT).",
+      "conclusion": "The endpoint is served by Linear's SPA. Error handling for an unknown client couldn't be seen without a browser.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Console URL login wall",
+      "target": "https://linear.app/settings/api/applications/new",
+      "method": "WebFetch GET (no JS)",
+      "observed": "Same SPA shell ('Loading…'), no HTTP redirect to a login page visible.",
+      "conclusion": "Any login wall is enforced client-side; not observable without JS.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Token endpoint with dummy client",
+      "target": "https://api.linear.app/oauth/token",
+      "method": "curl POST grant_type=authorization_code with client_id=test_invalid_client",
+      "observed": "curl: CONNECT tunnel failed, response 403 (session egress proxy).",
+      "conclusion": "Blocked by the sandbox.",
+      "ok": null,
+      "at": "2026-10-28"
+    }
+  ],
+  "verification": {
+    "status": "spot_checked",
+    "checked_on": "2026-10-28",
+    "method": "Re-opened Linear's OAuth 2.0, app manifests, agents, integration directory and rate-limiting docs, to confirm token lifetimes, refresh migration, actor rules, distribution and directory criteria. Checked Composio custom-auth, white-labeling and Linear pages for the callback and scopes. Independent spot-check (2026-10-28) by the project author, separate from the research agent: re-read Linear's OAuth docs [S14]: 24h access tokens, rotating refresh tokens, 30-minute replay window, all apps migrated to refresh tokens on 2026-04-01. Matches the guide.",
+    "corrections": [
+      {
+        "claim": "Linear OAuth access tokens are long-lived (about 10 years) with no refresh",
+        "was": "Long-lived tokens; refresh tokens opt-in per app from Oct 2025",
+        "now": "All OAuth apps migrated to refresh tokens on 2026-04-01. Access tokens last 24 h, and refresh tokens rotate on each use.",
+        "source_ids": [
+          "S1",
+          "S6",
+          "S8"
+        ]
+      },
+      {
+        "claim": "Composio Linear callback is https://backend.composio.dev/api/v1/auth-apps/add",
+        "was": "v1 URL on composio.dev/auth/linear",
+        "now": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+        "source_ids": [
+          "S9",
+          "S10",
+          "S11"
+        ]
+      }
+    ],
+    "unverified": [
+      "Composio managed OAuth availability for Linear",
+      "Live Linear authorize/token endpoint responses to an unknown client (SPA shell / proxy blocked)",
+      "Whether legacy pre-migration long-lived tokens still work",
+      "Refresh token idle lifetime"
+    ]
+  },
+  "method": "curated",
+  "generated_at": "2026-10-28T00:00:00Z",
+  "model": "research-agent"
+}

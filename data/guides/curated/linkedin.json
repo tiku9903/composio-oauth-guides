@@ -1,0 +1,536 @@
+{
+  "slug": "linkedin",
+  "app_name": "LinkedIn",
+  "website": "https://www.linkedin.com",
+  "category": "Social",
+  "tagline": "Sign-in and post-as-member are self-serve in minutes; anything else (company pages, analytics, refresh tokens) is partner-gated.",
+  "tier": 1,
+  "tier_reason": "For the two self-serve products (Sign In with LinkedIn using OpenID Connect; Share on LinkedIn) you create the app, attach a LinkedIn Page, add the products and any LinkedIn member can connect with no review. That covers reading the signed-in member's basic profile/email and posting as them (w_member_social). Everything else an agent usually wants (posting as or managing a Company Page, reading comments/analytics, ads, messaging, other members' profiles, refresh tokens) is tier 4: a Community Management / Marketing partner application limited to registered legal organisations with a business email, with a screencast review for Standard tier and no published timeline.",
+  "time": {
+    "active_effort": "20-45 min for the self-serve path (Page, app, products, redirect, test)",
+    "active_hours_low": 0.3,
+    "active_hours_high": 0.75,
+    "wait": "none for self-serve products; Community Management Development tier and Standard tier reviews have no published SLA (community reports: days to weeks, frequent rejections)",
+    "wait_days_low": 0,
+    "wait_days_high": 0,
+    "summary": "Letting users sign in and post as themselves via LinkedIn works today with no approval; company-page or analytics features need a LinkedIn partner application that may be rejected.",
+    "evidence": "sourced",
+    "source_ids": [
+      "L2",
+      "L3",
+      "L4",
+      "L7",
+      "L11"
+    ]
+  },
+  "composio": {
+    "managed_oauth": "unknown",
+    "toolkit_slug": "linkedin",
+    "note": "Composio's LinkedIn KB guide discusses auth configs and scope troubleshooting but does not confirm a Composio-managed LinkedIn OAuth app or its scopes; the toolkit page itself could not be fetched. Slug `linkedin` inferred from doc URLs. Composio's LinkedIn credentials guide says Bearer Token is not supported, use OAuth2 with your own developer credentials.",
+    "evidence": "uncertain",
+    "source_ids": [
+      "L9",
+      "L10"
+    ]
+  },
+  "oauth": {
+    "developer_console_url": "https://www.linkedin.com/developers/apps",
+    "docs_url": "https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow",
+    "authorize_url": "https://www.linkedin.com/oauth/v2/authorization",
+    "token_url": "https://www.linkedin.com/oauth/v2/accessToken",
+    "oauth_version": "OAuth 2.0 authorization code (3-legged); OpenID Connect for sign-in (discovery: https://www.linkedin.com/oauth/.well-known/openid-configuration)",
+    "pkce": "Not documented for the web 3-legged flow on the pages checked (a 'code verifier does not match' token error exists); treat as unsupported for server apps",
+    "refresh_tokens": "Access tokens live 60 days (expires_in 5184000). Self-serve apps get NO refresh token: the user must re-run the consent flow before expiry (consent screen is skipped if still logged in and the token is valid). Programmatic refresh tokens (365-day fixed TTL, not extended by refreshing) are only for approved Marketing Developer Platform partners. LinkedIn may revoke tokens at any time. Authorization codes expire after 30 minutes and are single-use.",
+    "scopes_note": "Available scopes depend on which Products the app has. Self-serve: `openid`, `profile`, `email` (Sign In with LinkedIn using OpenID Connect) and `w_member_social` (Share on LinkedIn). Members must accept all requested scopes (no partial grants); requesting a scope the app lacks fails the whole request. Changing scopes forces re-auth and can invalidate earlier tokens. Legacy `r_liteprofile` / `r_emailaddress` are replaced by `profile` / `email`.",
+    "example_scopes": [
+      "openid",
+      "profile",
+      "email",
+      "w_member_social"
+    ],
+    "account_needed": "A personal LinkedIn account plus a LinkedIn Page (company/organisation page) to associate with the app; a Page super admin must verify the app. Partner products additionally need a registered legal entity and verified business email."
+  },
+  "start_here": "Make sure you (or a colleague) are a super admin of a LinkedIn Page for your company, then create the app at linkedin.com/developers/apps/new and associate it with that Page.",
+  "steps": [
+    {
+      "phase": "prepare",
+      "title": "Have a LinkedIn Page you administer",
+      "owner": "you",
+      "effort": "0-15 min",
+      "detail": "Every developer app must be associated with a LinkedIn Page, even if it only acts on members' personal profiles. If your company has none, create a basic Page first. Whoever verifies the app must be a **super admin** of that Page.",
+      "agent_help": "Agent can draft the Page description and check whether a Page already exists for your domain.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L7",
+        "L12",
+        "L13"
+      ]
+    },
+    {
+      "phase": "register",
+      "title": "Create the developer app",
+      "owner": "you",
+      "effort": "5-10 min",
+      "detail": "At **linkedin.com/developers/apps > Create app** enter **App name** (no 'Linked'/'In'/LinkedIn or Microsoft branding), the **LinkedIn Page** URL, privacy policy URL, and an **App logo**; accept the API Terms of Use. You must be logged in; the console is behind LinkedIn sign-in.",
+      "agent_help": "Agent can prepare the name, logo spec and privacy-policy URL; the form itself needs your LinkedIn login.",
+      "links": [
+        "https://www.linkedin.com/developers/apps/new"
+      ],
+      "evidence": "sourced",
+      "source_ids": [
+        "L7",
+        "L10",
+        "L13"
+      ]
+    },
+    {
+      "phase": "register",
+      "title": "Verify the app with the Page",
+      "owner": "you",
+      "effort": "2-5 min",
+      "detail": "**Settings tab > Verify > Generate URL**. A Page super admin opens the link while logged in and approves; then click **I'm done**. If you are the admin it is effectively instant. Verification is a hard prerequisite for any partner product request.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L7",
+        "L13",
+        "L14"
+      ]
+    },
+    {
+      "phase": "configure",
+      "title": "Add the self-serve products",
+      "owner": "you",
+      "effort": "2 min",
+      "detail": "**Products tab**: request **Sign In with LinkedIn using OpenID Connect** (grants `openid profile email`) and **Share on LinkedIn** (grants `w_member_social`). These are granted without review. Confirm under **Auth tab > OAuth 2.0 scopes**. Do not add Community Management API here if you may need it later: its Development-tier request must be made from a new app with no other products.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L2",
+        "L3",
+        "L4",
+        "L8",
+        "L12"
+      ]
+    },
+    {
+      "phase": "configure",
+      "title": "Add the Composio redirect URL and copy credentials",
+      "owner": "you_with_agent",
+      "effort": "5 min",
+      "detail": "**Auth tab > OAuth 2.0 settings > Authorized redirect URLs for your app**: add `https://backend.composio.dev/api/v3/toolkits/auth/callback`. LinkedIn requires an absolute URL, no `#fragment`; query strings are dropped on save; the request's `redirect_uri` must match a registered one. Copy **Client ID** and **Primary Client Secret** into a Composio LinkedIn auth config (OAuth2, *Use your own developer authentication*) with scopes `openid profile email w_member_social` only.",
+      "agent_help": "Agent can create the Composio auth config via API once you hand over the client secret.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L9",
+        "L10",
+        "L15"
+      ]
+    },
+    {
+      "phase": "test",
+      "title": "Run a test connection and post",
+      "owner": "you_with_agent",
+      "effort": "10-20 min",
+      "detail": "Connect your own LinkedIn account through Composio. Call `GET https://api.linkedin.com/v2/userinfo` (returns `sub`, name, picture, optional email). Build the author as `urn:li:person:{sub}` and create a post (`POST /v2/ugcPosts` with `X-Restli-Protocol-Version: 2.0.0`, or the newer versioned `/rest/posts` with a `LinkedIn-Version` header). Member posting is limited to about 150 requests/member/day. LinkedIn may show an email security checkpoint during consent.",
+      "agent_help": "Agent can run the whole test: open connect link, call userinfo, publish and delete a test post.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L2",
+        "L3",
+        "L16"
+      ]
+    },
+    {
+      "phase": "launch",
+      "title": "Plan for 60-day re-consent",
+      "owner": "agent",
+      "detail": "With self-serve products there is no refresh token. Track `expires_in` per connection and prompt the user to reconnect before day 60; if they are still logged into LinkedIn the consent screen is skipped.",
+      "agent_help": "Agent can schedule reconnect reminders from the stored expiry.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L5"
+      ]
+    },
+    {
+      "phase": "review",
+      "title": "Optional: apply for Community Management API",
+      "owner": "you",
+      "effort": "1-2 h (Development tier form); 4-8 h for Standard tier (integration + screencast)",
+      "wait": "No published SLA; anecdotal days to weeks",
+      "detail": "Only if you need company-page posting, comments, page analytics or organisation scopes (`w_organization_social`, `rw_organization_admin`). Create a **new app** with no other products, verify it with the same Page, and submit the access form with a verified **business email**, legal entity name, registered address, website and privacy policy. Only registered legal organisations with commercial use cases qualify; individuals and personal emails fail vetting. Rejected = create a new app and reapply. Standard tier requires a narrated, downloadable screencast of every use case plus test credentials.",
+      "agent_help": "Agent can draft the use-case description, map features to LinkedIn's listed use cases and script the screencast.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L6",
+        "L7",
+        "L8"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "title": "LinkedIn Page association and verification",
+      "detail": "Each app must be tied to a LinkedIn Page; a Page super admin verifies it via a generated URL.",
+      "severity": "blocker",
+      "evidence": "sourced",
+      "source_ids": [
+        "L7",
+        "L12",
+        "L13"
+      ]
+    },
+    {
+      "title": "Scopes limited to granted products",
+      "detail": "Self-serve: openid, profile, email, w_member_social. Requesting any other scope (e.g. w_organization_social, r_organization_social) without the partner product fails the auth request.",
+      "severity": "blocker",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L4",
+        "L9"
+      ]
+    },
+    {
+      "title": "Redirect URL format",
+      "detail": "Absolute URL registered in the Auth tab; no fragments; query params ignored at registration. LinkedIn's doc says register via HTTPS and does not document a localhost exception, although community guides use http://localhost:<port> successfully.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L15"
+      ]
+    },
+    {
+      "title": "60-day access tokens, no refresh for self-serve",
+      "detail": "Users must reauthorise every 60 days; programmatic refresh tokens only for approved MDP partners.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L5"
+      ]
+    },
+    {
+      "title": "Partner products need a legal entity",
+      "detail": "Community Management API: registered legal organisation, commercial use, verified business email, privacy policy, verified Page; Standard tier needs a screencast.",
+      "severity": "blocker",
+      "applies_when": "Company Page posting, comments, analytics, organisation data",
+      "evidence": "sourced",
+      "source_ids": [
+        "L6",
+        "L7"
+      ]
+    },
+    {
+      "title": "No identity verification claim",
+      "detail": "LinkedIn states OIDC sign-in does not verify user identities; do not market it as such.",
+      "severity": "minor",
+      "evidence": "sourced",
+      "source_ids": [
+        "L2"
+      ]
+    },
+    {
+      "title": "Rate limits",
+      "detail": "Share API: 150 requests per member per day, 100,000 per app per day (UTC).",
+      "severity": "minor",
+      "evidence": "sourced",
+      "source_ids": [
+        "L3"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "title": "Invalid scope",
+      "symptom": "Authorization page error 'Invalid scope' / connection fails before consent.",
+      "what_to_do": "Trim the Composio auth config to scopes listed on the app's Auth tab (openid profile email w_member_social). Organisation scopes need Community Management approval. Changing scopes needs a new Composio auth config and reconnect.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L9"
+      ]
+    },
+    {
+      "title": "redirect_uri does not match",
+      "symptom": "Error 'The redirect_uri does not match the registered value' before any callback.",
+      "what_to_do": "Register exactly the callback shown in your Composio auth config (no trailing slash); don't mix v1/v3 Composio paths.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L9"
+      ]
+    },
+    {
+      "title": "Community Management option greyed out",
+      "symptom": "Cannot request Community Management API on your existing app.",
+      "what_to_do": "Create a new app with no other products, verify it with the same Page, request Development tier there.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L8"
+      ]
+    },
+    {
+      "title": "Partner request rejected",
+      "symptom": "Developer Portal shows rejection for Community Management / Marketing products.",
+      "what_to_do": "You cannot reapply on the same app. Check the use case is on LinkedIn's supported list, use a verified business email and legal entity, then create a new app and resubmit. Individuals and side projects are commonly refused.",
+      "evidence": "sourced",
+      "evidence_note": "Rejection/new-app rule is official; 'individuals commonly refused' is inferred from the legal-entity requirement and community reports.",
+      "source_ids": [
+        "L6",
+        "L11",
+        "L14"
+      ]
+    },
+    {
+      "title": "Connections die after 60 days",
+      "symptom": "401 / invalid token for users who connected about two months ago.",
+      "what_to_do": "Expected for self-serve apps. Prompt reconnect before expiry; there is no refresh grant unless you are an approved partner.",
+      "evidence": "sourced",
+      "source_ids": [
+        "L1",
+        "L5"
+      ]
+    }
+  ],
+  "agent_can": [
+    "Draft app name, Page description, privacy-policy text",
+    "Create the Composio auth config with the self-serve scopes once given the client secret",
+    "Run a test connection, call /v2/userinfo and publish/delete a test post as the member",
+    "Track 60-day token expiry and send reconnect prompts",
+    "Draft a Community Management use-case description and screencast script"
+  ],
+  "you_must": [
+    "Log into LinkedIn and create the app (console is behind sign-in)",
+    "Be or recruit a super admin of the company LinkedIn Page to verify the app",
+    "Accept LinkedIn API Terms of Use",
+    "For partner products: provide legal entity details and a verified business email, record the screencast"
+  ],
+  "ready_to_paste": [
+    {
+      "label": "Authorized redirect URL",
+      "value": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+      "note": "From Composio custom-auth / white-labeling docs and Composio's LinkedIn credentials guide. Must match `oauth_redirect_uri` in your Composio auth config exactly."
+    },
+    {
+      "label": "Scopes (self-serve)",
+      "value": "openid profile email w_member_social"
+    },
+    {
+      "label": "Authorize URL template",
+      "value": "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=<CLIENT_ID>&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv3%2Ftoolkits%2Fauth%2Fcallback&state=<STATE>&scope=openid%20profile%20email%20w_member_social"
+    },
+    {
+      "label": "App description / consent copy",
+      "value": "<App name> lets your AI assistant sign you in with LinkedIn and, when you ask it to, publish posts to your own LinkedIn profile. It never posts without your instruction and you can disconnect at any time."
+    },
+    {
+      "label": "Community Management use-case template",
+      "value": "Organisation: <legal name>, <registered address>, <website>. Use case: <Page Management | Employee Advocacy>. Our product lets Page admins of our business customers draft posts with an AI assistant, approve them, and publish to their LinkedIn Page via w_organization_social; we read comments via r_organization_social to suggest replies. Data is used only to display to the authorising admin and is deleted within <N> days of disconnect."
+    }
+  ],
+  "open_questions": [
+    "Does LinkedIn accept http://localhost redirect URLs officially? Docs say HTTPS; community guides use localhost.",
+    "Is PKCE supported for web (non-native) apps?",
+    "Does Composio offer a managed LinkedIn OAuth app, and with which scopes?",
+    "Typical Community Management Development/Standard tier review time in 2026.",
+    "Is a Page verification strictly required before the self-serve products work, or only for partner products?"
+  ],
+  "sources": [
+    {
+      "id": "L1",
+      "title": "LinkedIn: Authorization Code Flow (3-legged OAuth)",
+      "url": "https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L2",
+      "title": "LinkedIn: Sign In with LinkedIn using OpenID Connect",
+      "url": "https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L3",
+      "title": "LinkedIn: Share on LinkedIn",
+      "url": "https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin",
+      "kind": "official_docs",
+      "accessed": "2026-10-28",
+      "note": "Read via ru-ru locale mirror"
+    },
+    {
+      "id": "L4",
+      "title": "LinkedIn Consumer Solutions overview",
+      "url": "https://learn.microsoft.com/en-us/linkedin/consumer",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L5",
+      "title": "LinkedIn: Programmatic refresh tokens",
+      "url": "https://learn.microsoft.com/en-us/linkedin/shared/authentication/programmatic-refresh-tokens",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L6",
+      "title": "LinkedIn Product Catalog: Community Management API",
+      "url": "https://developer.linkedin.com/product-catalog/marketing/community-management-api",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L7",
+      "title": "LinkedIn: Community Management App Review",
+      "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management-app-review",
+      "kind": "official_policy",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L8",
+      "title": "LinkedIn: Community Management API migration guide (FAQ)",
+      "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management/community-management-api-migration-guide",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L9",
+      "title": "Composio KB: LinkedIn toolkit guide",
+      "url": "https://docs.composio.dev/kb/guide/toolkits-linkedin",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L10",
+      "title": "Composio: How to create OAuth2 config for LinkedIn",
+      "url": "https://composio.dev/auth/linkedin",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L11",
+      "title": "bundle.social: LinkedIn API permissions (2026-08-04)",
+      "url": "https://bundle.social/blog/linkedin-api-permissions",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L12",
+      "title": "OpenTweet: LinkedIn API without a company page (Sept 2026)",
+      "url": "https://opentweet.io/answers/linkedin-api-without-company-page",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L13",
+      "title": "JC Chouinard: LinkedIn API OAuth credentials",
+      "url": "https://www.jcchouinard.com/linkedin-api-oauth-credentials",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L14",
+      "title": "DEV: Post to LinkedIn from a script, 15-minute OAuth walkthrough (2026)",
+      "url": "https://dev.to/broke2builtai/how-to-post-to-linkedin-from-a-script-the-15-minute-oauth-walkthrough-2026-58fp",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L15",
+      "title": "Composio: White-labeling (callback URL)",
+      "url": "https://docs.composio.dev/docs/auth-configuration/white-labeling",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "L16",
+      "title": "LinkedIn API Access: what standard developer access gets you (verified 2026-08-24)",
+      "url": "https://linkedapi.io/guides/linkedin-api-access",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    }
+  ],
+  "probes": [
+    {
+      "name": "Authorize URL with dummy client_id",
+      "target": "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=test_invalid_client&redirect_uri=https://backend.composio.dev/api/v3/toolkits/auth/callback&scope=openid%20profile%20email",
+      "method": "WebFetch GET authorize URL with dummy client_id",
+      "observed": "Refused by the session URL allowlist (URL_NOT_ON_ALLOWLIST); no request reached LinkedIn.",
+      "conclusion": "Unknown-client error handling not observed; documented error is 401 'Client_id doesn't match'.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "OIDC discovery document",
+      "target": "https://www.linkedin.com/oauth/.well-known/openid-configuration",
+      "method": "WebFetch GET discovery URL",
+      "observed": "Refused by the session URL allowlist; no response.",
+      "conclusion": "Endpoints taken from LinkedIn's OIDC doc, which quotes the discovery values.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Developer console login wall",
+      "target": "https://www.linkedin.com/developers/apps/new",
+      "method": "WebFetch GET console URL",
+      "observed": "Refused by the session URL allowlist; LinkedIn help pages also returned robots_disallowed.",
+      "conclusion": "Login wall not observed directly.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Composio callback URL in docs",
+      "target": "https://docs.composio.dev/docs/custom-auth-configs",
+      "method": "WebFetch docs page and look for the callback URL",
+      "observed": "Page gives https://backend.composio.dev/api/v3/toolkits/auth/callback; composio.dev/auth/linkedin gives the same value for LinkedIn.",
+      "conclusion": "Redirect URL confirmed from Composio docs (not from a live connect flow).",
+      "ok": true,
+      "at": "2026-10-28"
+    }
+  ],
+  "verification": {
+    "status": "spot_checked",
+    "checked_on": "2026-10-28",
+    "method": "Re-opened LinkedIn official docs for the authorization code flow (redirect rules, 60-day tokens, error codes), OIDC sign-in, Share on LinkedIn, programmatic refresh tokens, Community Management product page, app review and migration FAQ; Composio custom-auth, white-labeling and LinkedIn guides. Live probes to linkedin.com were blocked by the session allowlist.",
+    "corrections": [
+      {
+        "claim": "Use r_liteprofile and r_emailaddress for LinkedIn login",
+        "was": "Legacy Sign In with LinkedIn scopes (still in LinkedIn's own auth-flow example)",
+        "now": "Use openid, profile, email via the Sign In with LinkedIn using OpenID Connect product; userinfo at /v2/userinfo.",
+        "source_ids": [
+          "L1",
+          "L2"
+        ]
+      },
+      {
+        "claim": "Community Management API must always live on its own separate app",
+        "was": "Commonly stated that it cannot share an app with other products",
+        "now": "Only the initial Development-tier request must come from a new app with no other products; after approval it can be added to an existing app verified with the same Page.",
+        "source_ids": [
+          "L8",
+          "L14"
+        ]
+      },
+      {
+        "claim": "LinkedIn refresh tokens extend on use",
+        "was": "Assumed rolling refresh like most providers",
+        "now": "Refresh tokens (partners only) have a fixed 365-day TTL from the first consent; refreshing does not extend it.",
+        "source_ids": [
+          "L5"
+        ]
+      }
+    ],
+    "unverified": [
+      "All live probes against linkedin.com (blocked by the session allowlist)",
+      "Whether http://localhost redirect URLs are accepted (docs say HTTPS; only community examples use localhost)",
+      "Composio-managed LinkedIn OAuth availability",
+      "Community Management review times and rejection rates (no official numbers)",
+      "Whether Page verification is required before self-serve products can be added"
+    ]
+  },
+  "method": "curated",
+  "generated_at": "2026-10-28T00:00:00Z",
+  "model": "research-agent"
+}

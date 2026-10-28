@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tier_pill, path, ev %}
+{% block title %}{{ g.app_name }} OAuth app: {{ g.tier_label }} · OAuth App Readiness{% endblock %}
+{% block desc %}{{ g.tagline }}{% endblock %}
+{% block main %}
+<div class="wrap tier tier-{{ g.tier }}" style="color:inherit">
+  <header class="g-head">
+    <div class="crumb"><a href="/">Library</a><span aria-hidden="true">/</span><span>{{ g.category or 'App' }}</span>
+      {% if g.method == 'live_agent' %}<span class="muted">Investigated live by the agent on {{ g.generated_at[:10] }}</span>{% else %}<span class="muted">Curated guide, checked {{ g.verification.checked_on or g.generated_at[:10] }}</span>{% endif %}
+    </div>
+    <h1>Getting a {{ g.app_name }} OAuth app ready</h1>
+    <p class="tagline">{{ g.tagline }}</p>
+    {% if g.supports_oauth != 'yes' %}<p class="notice warn" style="margin-top:14px">{% if g.supports_oauth == 'no' %}This provider does not appear to offer third-party OAuth.{% else %}It's unclear whether this provider offers third-party OAuth.{% endif %} Read the requirements below before planning an integration.</p>{% endif %}
+
+    <div class="g-verdict">
+      <div><div class="k">Difficulty</div><div class="v">{{ tier_pill(g.tier) }}</div><div class="s">{{ g.tier_reason }}</div></div>
+      <div><div class="k">Your hands-on time</div><div class="v">{{ short_effort(g) }}</div><div class="detail">{{ g.time.active_effort }}</div><div class="s">{{ ev(g.time.evidence, g.time.source_ids, src) }}</div></div>
+      <div><div class="k">Waiting on {{ g.app_name }}</div><div class="v">{{ short_wait(g)|capitalize }}</div><div class="detail">{{ g.time.wait }}</div></div>
+    </div>
+    <p class="summary-line">{{ g.time.summary }}</p>
+    <div class="g-path path-lg">{{ path(g, ticks=True) }}<div class="path-key tier tier-{{ g.tier }}"><span><i></i>Your hands-on work</span><span><i class="w"></i>Possible wait on {{ g.app_name }}</span></div></div>
+
+    <div class="g-actions">
+      <button class="btn sm" data-copy="{{ share_url }}">Copy link to share</button>
+      <a class="btn ghost sm" href="/guides/{{ g.slug }}.md">Download as Markdown</a>
+      <a class="btn ghost sm" href="/api/guides/{{ g.slug }}">JSON</a>
+      <a class="btn ghost sm" href="/generate?q={{ g.app_name|urlencode }}&refresh=1">Re-investigate now</a>
+    </div>
+  </header>
+
+  <div class="g-body">
+    <div class="g-main">
+      <section aria-labelledby="start-h">
+        <h2 id="start-h">Start here</h2>
+        <p class="start-here" style="--tc: var(--t{{ g.tier }})">{{ g.start_here }}</p>
+        {% if g.composio.managed_oauth == 'yes' %}
+        <p class="notice">Composio offers a managed OAuth app for {{ g.app_name }}. You can launch with it today and switch to your own app later for your branding on the consent screen, custom scopes or your own rate limits. {{ ev(g.composio.evidence, g.composio.source_ids, src) }}</p>
+        {% endif %}
+      </section>
+
+      <section aria-labelledby="steps-h">
+        <h2 id="steps-h">Steps</h2>
+        <ol class="steps">
+          {% set ns = namespace(phase=None) %}
+          {% for s in g.steps %}
+          <li class="step owner-{{ s.owner }}">
+            {% if s.phase != ns.phase %}<div class="phase">{{ PHASE_LABELS[s.phase] }}</div>{% set ns.phase = s.phase %}{% endif %}
+            <h3>{{ s.title }}</h3>
+            <div class="meta">
+              <span class="owner {{ s.owner }}">{{ OWNER_LABELS[s.owner] }}</span>
+              {% if s.effort %}<span>{{ s.effort }}</span>{% endif %}
+              {% if s.wait %}<span>wait {{ s.wait }}</span>{% endif %}
+              {{ ev(s.evidence, s.source_ids, src) }}
+            </div>
+            <div class="detail">{{ s.detail|md }}</div>
+            {% if s.agent_help %}<div class="agent-help"><b>What an agent can do here:</b> {{ s.agent_help }}</div>{% endif %}
+            {% if s.evidence_note %}<div class="ev-note">{{ s.evidence_note }}</div>{% endif %}
+            {% if s.links %}<div class="small" style="margin-top:6px">{% for l in s.links %}<a href="{{ l }}" target="_blank" rel="noopener">{{ l|replace('https://','') }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+      </section>
+
+      {% if g.requirements %}
+      <section aria-labelledby="req-h">
+        <h2 id="req-h">Requirements and nuances</h2>
+        <div class="reqs">
+          {% for r in g.requirements %}
+          <div class="req">
+            <div class="sev sev-{{ r.severity }}">{{ {'blocker':'Can block you','important':'Important','minor':'Minor'}[r.severity] }}</div>
+            <div>
+              <h3>{{ r.title }}</h3>
+              <p>{{ r.detail }}</p>
+              {% if r.applies_when %}<div class="when">Applies when {{ r.applies_when }}</div>{% endif %}
+              <div>{{ ev(r.evidence, r.source_ids, src) }}</div>
+              {% if r.evidence_note %}<div class="ev-note">{{ r.evidence_note }}</div>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if g.blockers %}
+      <section aria-labelledby="blk-h">
+        <h2 id="blk-h">If you get blocked</h2>
+        <div class="blockers">
+          {% for b in g.blockers %}
+          <div class="blocker">
+            <h3>{{ b.title }}</h3>
+            <div class="sym">You see: {{ b.symptom }}</div>
+            <div class="fix">{{ b.what_to_do|md }}</div>
+            <div>{{ ev(b.evidence, b.source_ids, src) }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <section aria-labelledby="who-h">
+        <h2 id="who-h">What an agent can do, and where you take over</h2>
+        <div class="split">
+          <div><h3><span class="owner agent">An agent can</span></h3><ul>{% for x in g.agent_can %}<li>{{ x }}</li>{% endfor %}</ul></div>
+          <div><h3><span class="owner you">You need to</span></h3><ul>{% for x in g.you_must %}<li>{{ x }}</li>{% endfor %}</ul></div>
+        </div>
+      </section>
+
+      {% if g.ready_to_paste %}
+      <section aria-labelledby="paste-h">
+        <h2 id="paste-h">Ready to paste</h2>
+        <div class="paste">
+          {% for r in g.ready_to_paste %}
+          <div class="paste-item">
+            <div class="lbl"><span>{{ r.label }}</span><button class="copy" data-copy="{{ r.value }}">Copy</button></div>
+            <pre><code>{{ r.value }}</code></pre>
+            {% if r.note %}<div class="note">{{ r.note }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if g.probes %}
+      <section aria-labelledby="probe-h">
+        <h2 id="probe-h">What the agent tried live</h2>
+        <p class="muted small">Read-only requests made without your credentials. A probe that couldn't reach the provider counts as no evidence, not as a failure of the provider.</p>
+        <div class="probes">
+          {% for p in g.probes %}
+          <div class="probe">
+            <span class="mark {{ 'ok' if p.ok else ('no' if p.ok == false else '') }}" title="{{ 'Observed' if p.ok else ('Negative result' if p.ok == false else 'Inconclusive') }}"></span>
+            <div><strong>{{ p.name }}</strong> — {{ p.conclusion }}
+              <div class="obs">{{ p.method }}. Observed: {{ p.observed }}</div>
+              <div class="target">{{ p.target }}{% if p.at %} · {{ p.at[:16]|replace('T',' ') }} UTC{% endif %}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if g.open_questions %}
+      <section aria-labelledby="oq-h">
+        <h2 id="oq-h">Questions to ask {{ g.app_name }}</h2>
+        <ul class="oq">{% for q in g.open_questions %}<li>{{ q }}</li>{% endfor %}</ul>
+      </section>
+      {% endif %}
+    </div>
+
+    <aside class="g-side" aria-label="Details and sources">
+      <div class="stick">
+        <div class="side-box">
+          <h3>OAuth details</h3>
+          <dl class="kv">
+            {% set o = g.oauth %}
+            {% if o.developer_console_url %}<dt>Console</dt><dd><a href="{{ o.developer_console_url }}" target="_blank" rel="noopener">{{ o.developer_console_url|replace('https://','') }}</a></dd>{% endif %}
+            {% if o.docs_url %}<dt>Docs</dt><dd><a href="{{ o.docs_url }}" target="_blank" rel="noopener">{{ o.docs_url|replace('https://','') }}</a></dd>{% endif %}
+            {% if o.authorize_url %}<dt>Authorize</dt><dd><code>{{ o.authorize_url }}</code></dd>{% endif %}
+            {% if o.token_url %}<dt>Token</dt><dd><code>{{ o.token_url }}</code></dd>{% endif %}
+            {% if o.pkce %}<dt>PKCE</dt><dd>{{ o.pkce }}</dd>{% endif %}
+            {% if o.refresh_tokens %}<dt>Tokens</dt><dd>{{ o.refresh_tokens }}</dd>{% endif %}
+            {% if o.account_needed %}<dt>Account</dt><dd>{{ o.account_needed }}</dd>{% endif %}
+            <dt>Composio app</dt><dd>{{ {'yes':'Managed app available','no':'Bring your own','unknown':'Not confirmed'}[g.composio.managed_oauth] }}</dd>
+          </dl>
+          {% if o.scopes_note %}<p class="small muted" style="margin:10px 0 0">{{ o.scopes_note }}</p>{% endif %}
+        </div>
+
+        <div class="side-box">
+          <h3>How sure we are</h3>
+          <div class="ev-bars">
+            {% for k in ['tested','sourced','inferred','uncertain'] %}
+            <div class="row"><span class="ev ev-{{ k }}" title="{{ EVIDENCE_HELP[k] }}">{{ EVIDENCE_LABELS[k] }}</span><span>{{ counts[k] }}</span></div>
+            {% endfor %}
+          </div>
+          <p class="small muted" style="margin:10px 0 0">{% if g.verification.status == 'spot_checked' %}Key claims were re-checked against their sources on {{ g.verification.checked_on }}.{% elif g.method == 'live_agent' %}Written by the agent and checked by a separate verifier pass. Not reviewed by a person.{% else %}Curated.{% endif %}</p>
+        </div>
+
+        {% if g.verification.corrections or g.verification.unverified %}
+        <div class="side-box">
+          {% if g.verification.corrections %}
+          <h3>What we corrected</h3>
+          <ul class="corr" style="padding-left:18px;margin:0 0 10px">{% for c in g.verification.corrections %}<li><strong>{{ c.claim }}:</strong> {{ c.now }}{% for i in c.source_ids %}{% if i in src %} <a class="cites" href="#src-{{ i }}">{{ i }}</a>{% endif %}{% endfor %}</li>{% endfor %}</ul>
+          {% endif %}
+          {% if g.verification.unverified %}
+          <h3>Not verified</h3>
+          <ul class="corr" style="padding-left:18px;margin:0">{% for u in g.verification.unverified %}<li>{{ u }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="side-box">
+          <h3>Sources</h3>
+          <ol class="sources">
+            {% for s in g.sources %}
+            <li id="src-{{ s.id }}"><span class="sid">{{ s.id }}</span><span><a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.title }}</a><span class="kind">{{ s.kind|replace('_',' ') }}{% if s.accessed %}, read {{ s.accessed }}{% endif %}</span></span></li>
+            {% endfor %}
+          </ol>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

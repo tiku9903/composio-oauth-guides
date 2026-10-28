@@ -1,0 +1,19 @@
+{% macro tier_pill(t) -%}
+<span class="tier tier-{{ t }} tier-pill" title="{{ TIER_BLURBS[t] }}"><span class="pips" aria-hidden="true">{% for i in range(1,5) %}<i class="{{ 'on' if i <= t }}"></i>{% endfor %}</span>{{ TIER_LABELS[t] }}</span>
+{%- endmacro %}
+
+{% macro path(g, ticks=False) -%}
+{% set b = path_bar(g) %}
+<div class="tier tier-{{ g.tier }}">
+  <div class="path" role="img" aria-label="Hands-on {{ g.time.active_effort }}; wait {{ g.time.wait }}">
+    {% if b.wait_hi %}<span class="wait" style="left:{{ b.active_end }}%;width:{{ b.wait_hi - b.active_end }}%"></span>
+    <span class="wait-solid" style="left:{{ b.active_end }}%;width:{{ [b.wait_lo - b.active_end, 0]|max }}%"></span>{% endif %}
+    <span class="active" style="width:{{ b.active_end }}%"></span>
+  </div>
+  {% if ticks %}<div class="path-ticks" aria-hidden="true">{% for t in b.ticks %}<span style="left:{{ t.pos }}%">{{ t.label }}</span>{% endfor %}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro ev(e, ids=[], src={}, note=None) -%}
+<span class="ev ev-{{ e }}" title="{{ EVIDENCE_HELP[e] }}">{{ EVIDENCE_LABELS[e] }}</span>{% if ids %}<span class="cites">{% for i in ids %}{% if i in src %}<a href="#src-{{ i }}" title="{{ src[i].title }}">{{ i }}</a>{% endif %}{% endfor %}</span>{% endif %}
+{%- endmacro %}

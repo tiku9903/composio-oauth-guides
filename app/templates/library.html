@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tier_pill, path %}
+{% block main %}
+<div class="wrap">
+  <section class="hero">
+    <h1>Will your OAuth app take an hour or six weeks?</h1>
+    <p class="lede">Look up the app your agent's users need to connect. You get the path to a working, approved OAuth app: effort, approval wait, what blocks people, and which steps an agent can take off your hands.</p>
+    <form class="lookup" action="/lookup" method="get" role="search">
+      <label for="q" class="sr-only" style="position:absolute;left:-9999px">App name or website</label>
+      <input id="q" name="q" placeholder="App name or website, e.g. Zendesk or calendly.com" autocomplete="off" list="known" required>
+      <datalist id="known">{% for g in guides %}<option value="{{ g.app_name }}">{% endfor %}{% for c in pending %}<option value="{{ c.name }}">{% endfor %}</datalist>
+      <button class="btn" type="submit">Get the guide</button>
+    </form>
+    <p class="hint">Apps not in the library are investigated live by an agent, usually in 1–3 minutes.{% if not llm_ready %} <strong>Live investigation is off on this server:</strong> no model API key is set.{% endif %}</p>
+  </section>
+
+  <section class="section" aria-labelledby="lib-h">
+    <div class="section-head">
+      <h2 id="lib-h">Ready guides <span class="muted small">{{ all_count }}</span></h2>
+      <nav class="filters" aria-label="Filter by difficulty">
+        <a href="/" {% if tier is none %}aria-current="true"{% endif %}>All</a>
+        {% for t in range(1,5) %}<a href="/?tier={{ t }}" {% if tier == t %}aria-current="true"{% endif %}>{{ TIER_LABELS[t] }}</a>{% endfor %}
+      </nav>
+    </div>
+    <div class="lib-head" aria-hidden="true"><span>App</span><span>Verdict</span><span>Hands-on, then waiting</span><span style="text-align:right">How we know</span></div>
+    <div class="lib">
+      {% for g in guides %}
+      <a class="lib-row" href="/guides/{{ g.slug }}">
+        <div><div class="name">{{ g.app_name }}</div>{{ tier_pill(g.tier) }}</div>
+        <div class="tag">{{ g.tagline }}</div>
+        <div>{{ path(g) }}<div class="times"><span>{{ short_effort(g) }} hands-on</span><span>{{ short_wait(g) }}</span></div></div>
+        <div class="prov">{% if g.verification.status == 'spot_checked' %}Spot-checked against sources{% elif g.method == 'curated' %}Curated{% else %}Agent-generated{% endif %}<br><span class="muted">{{ g.sources|length }} sources · {{ g.probes|length }} probes</span></div>
+      </a>
+      {% else %}
+      <p class="muted" style="padding:18px 0">No guides match that filter.</p>
+      {% endfor %}
+    </div>
+    <div class="path-key tier tier-2" style="margin-top:14px"><span><i></i>Your hands-on work</span><span><i class="w"></i>Waiting on the provider (range)</span><span>Log scale, 10 minutes to 4 months.</span></div>
+  </section>
+
+  {% if pending %}
+  <section class="section" aria-labelledby="todo-h">
+    <div class="section-head">
+      <h2 id="todo-h">Not investigated yet <span class="muted small">{{ pending|length }} of {{ catalog_total }}</span></h2>
+      <span class="muted small">Pick one to have the agent investigate it now.</span>
+    </div>
+    <div class="chips">
+      {% for c in pending %}<a href="/generate?q={{ c.name|urlencode }}">{{ c.name }}<small>{{ c.category }}</small></a>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

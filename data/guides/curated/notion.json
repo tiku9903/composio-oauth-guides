@@ -1,0 +1,527 @@
+{
+  "slug": "notion",
+  "app_name": "Notion",
+  "website": "https://www.notion.com",
+  "category": "Productivity",
+  "tagline": "Self-serve public connection with instant OAuth credentials; Marketplace listing is optional and reviewed in 5-10 business days.",
+  "tier": 1,
+  "tier_reason": "A public connection (OAuth) is created self-serve in the Developer portal and can be installed by users in any workspace without a Marketplace listing. The only formal review Notion documents is for an optional Marketplace listing. One caveat: Notion's auth guide says the Authorization URL appears after the connection is 'submitted for review', which is not otherwise explained (see open questions).",
+  "time": {
+    "active_effort": "30-90 min",
+    "active_hours_low": 0.5,
+    "active_hours_high": 1.5,
+    "wait": "none for OAuth use; 5-10 business days if you also submit a Marketplace listing",
+    "wait_days_low": 0,
+    "wait_days_high": 0,
+    "summary": "About an hour to create a public Notion connection and test OAuth through Composio; no approval wait unless we choose to list on the Notion Marketplace (5-10 business days).",
+    "evidence": "sourced",
+    "source_ids": [
+      "S2",
+      "S3",
+      "S4"
+    ]
+  },
+  "composio": {
+    "managed_oauth": "unknown",
+    "toolkit_slug": "notion",
+    "note": "Composio's Notion page describes Composio handling the OAuth flow and refreshing tokens, and walks through bring-your-own credentials, but it does not explicitly say a Composio-managed Notion OAuth app exists. The managed-auth directory page rendered only 'Loading toolkits...' when fetched. Check `composio_managed_auth_schemes` via `composio.toolkits.get(\"notion\")`.",
+    "evidence": "uncertain",
+    "source_ids": [
+      "S9",
+      "S10",
+      "S11"
+    ]
+  },
+  "oauth": {
+    "developer_console_url": "https://app.notion.com/developers/connections",
+    "docs_url": "https://developers.notion.com/guides/get-started/authorization",
+    "authorize_url": "https://api.notion.com/v1/oauth/authorize",
+    "token_url": "https://api.notion.com/v1/oauth/token",
+    "oauth_version": "OAuth 2.0 authorization code (client secret via HTTP Basic auth at the token endpoint)",
+    "pkce": "Not mentioned in Notion's REST API OAuth docs; the documented flow uses client_id/client_secret Basic auth.",
+    "refresh_tokens": "Token response now includes a refresh_token (typed nullable) and there is a documented refresh grant (POST /v1/oauth/token, grant_type=refresh_token). Each refresh returns a NEW access token and a NEW refresh token (rotation) - always persist the latest pair. The token response schema has no expires_in and Notion does not document access/refresh lifetimes. Since 2026-06-08, new public connections get a fresh token pair on every successful authorization (re-auth included) instead of the existing token.",
+    "scopes_note": "Notion has no OAuth scope strings. Access is controlled by (1) the connection's Capabilities (read/update/insert content, comments, user info with/without email) set in the portal, and (2) the pages/databases the authorizing user picks in the consent page picker. The authorize URL takes owner=user and response_type=code; there is no scope parameter.",
+    "example_scopes": [],
+    "account_needed": "Any Notion account with a workspace to use as the development workspace. Internal connections need a workspace owner; public connections are created in the Developer portal."
+  },
+  "start_here": "Open https://app.notion.com/developers/connections, choose Build > Public connections > Create new connection, and pick installation scope 'Any workspace' (it cannot be changed later).",
+  "steps": [
+    {
+      "phase": "prepare",
+      "title": "Decide public vs internal, and the installation scope",
+      "owner": "you_with_agent",
+      "effort": "5-10 min",
+      "detail": "- **Internal connection**: single workspace, static token, pages must be shared with it manually. Not usable for other people's workspaces.\n- **Public connection**: OAuth 2.0, installable by other workspaces. This is what Composio custom auth needs.\n- **Installation scope** is chosen at creation and **cannot be changed**: `Any workspace` (Marketplace-eligible) or `Selected workspaces only` (not Marketplace-eligible). If you might ever list on the Marketplace, pick `Any workspace`.\n- Personal access tokens also exist but act as one user - not suitable for multi-user agents.",
+      "agent_help": "Explain the trade-offs and recommend a scope based on whether you plan to list publicly.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S2",
+        "S3"
+      ],
+      "links": [
+        "https://developers.notion.com/guides/get-started/overview"
+      ]
+    },
+    {
+      "phase": "register",
+      "title": "Create the public connection in the Developer portal",
+      "owner": "you",
+      "effort": "10-15 min",
+      "detail": "1. Go to https://app.notion.com/developers/connections (older guides still say notion.so/my-integrations).\n2. Sidebar **Build > Public connections > Create new connection**.\n3. Fill in: connection name, development workspace, **Redirect URIs** (paste the Composio callback below), installation scope, and **Capabilities**.\n4. Save. Client ID and client secret are on the **Configuration** tab.\n\nOlder (2021-era) forms also asked for website/homepage, privacy policy, terms of use and support email; current Notion docs no longer list those for the connection itself (listing details live under **Listings**). Have them ready anyway.",
+      "agent_help": "Prepare the exact field values (name, redirect URI, capability list) and draft a privacy policy / terms page if you don't have one.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S3",
+        "S2",
+        "S12"
+      ],
+      "links": [
+        "https://app.notion.com/developers/connections"
+      ]
+    },
+    {
+      "phase": "configure",
+      "title": "Set capabilities to the minimum your agent needs",
+      "owner": "you_with_agent",
+      "effort": "5 min",
+      "detail": "Capabilities replace OAuth scopes. Typical agent set: **Read content**, **Update content**, **Insert content**, optionally **Read comments / Insert comments**, and **Read user information** (with or without email). Anything not ticked is unavailable regardless of what pages the user shares.",
+      "agent_help": "Map the agent's planned Notion tools to the minimal capability set.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S3",
+        "S10"
+      ],
+      "links": []
+    },
+    {
+      "phase": "configure",
+      "title": "Create the Composio custom auth config",
+      "owner": "you_with_agent",
+      "effort": "5-10 min",
+      "detail": "In Composio: **Auth Configs > Create > Notion > Use your own credentials**, paste client ID and secret, and confirm the redirect URI matches exactly what you registered in Notion: `https://backend.composio.dev/api/v3/toolkits/auth/callback` (HTTPS, no trailing slash). To hide Composio's domain, register your own endpoint that 302-redirects to that callback instead.",
+      "agent_help": "Can create the auth config programmatically via the Composio SDK once you hand it the client ID/secret.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S9",
+        "S8"
+      ],
+      "links": [
+        "https://docs.composio.dev/docs/auth-configuration/white-labeling"
+      ]
+    },
+    {
+      "phase": "test",
+      "title": "Run an end-to-end authorization and check the page picker",
+      "owner": "you_with_agent",
+      "effort": "10-20 min",
+      "detail": "Connect a test account. During consent the **authorizing user picks which pages/databases** the connection can see; only pages where they have full access are offered, child pages inherit. Verify the agent can read a shared page and gets an error on an unshared one. Each workspace member who wants to use the connection must authorize separately (access is per user).",
+      "agent_help": "Generate the connect link, then call a read endpoint (e.g. search) with the resulting connection to confirm access.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1"
+      ],
+      "links": []
+    },
+    {
+      "phase": "test",
+      "title": "Exercise token refresh and rate-limit handling",
+      "owner": "agent",
+      "effort": "15-30 min",
+      "detail": "- Refresh rotates both tokens: store the newest refresh token every time or later refreshes fail with `invalid_grant`.\n- Rate limits (current): per connection **600 req/min on Business/Enterprise, 180 req/min on other plans** (fixed 60 s window), plus a workspace-wide limit shared by all connections, plus ~3 req/s for data source queries. Honour `Retry-After` on 429 and treat 529 `service_overload` the same; don't retry `public_api_request_blocked`.\n- Payload limits: 100 blocks per array, 1000 blocks / 500 KB per request, 2000 chars per rich text item.",
+      "agent_help": "Write and run backoff/retry tests; verify Composio refreshes and stores rotated tokens.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S5",
+        "S6",
+        "S7"
+      ],
+      "links": [
+        "https://developers.notion.com/reference/request-limits"
+      ]
+    },
+    {
+      "phase": "review",
+      "title": "(Optional) Submit a Marketplace listing",
+      "owner": "you",
+      "effort": "1-2 h",
+      "wait": "5-10 business days",
+      "detail": "Only needed for discoverability on the Notion Marketplace - not to let users connect. Requires a public connection with scope `Any workspace`. Under **Listings > Connections** supply name, description, category, tags, images and logo, then submit. Notion reviews every listing (and docs mention a security review before listing); rejections cite brand/trademark issues, quality, or baseline criteria, and you can resubmit.",
+      "agent_help": "Draft listing copy, description and screenshots checklist.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S4",
+        "S2"
+      ],
+      "links": [
+        "https://developers.notion.com/guides/get-started/marketplace-listing"
+      ]
+    },
+    {
+      "phase": "launch",
+      "title": "Ship to real users",
+      "owner": "you_with_agent",
+      "effort": "15 min",
+      "detail": "Point production users at the Composio connect flow. Tell them in your UI to tick the pages they want the agent to see - an empty selection is the most common 'agent can't find anything' cause. Users can change shared pages later from Notion.",
+      "agent_help": "Write the in-app helper text for the page-picker step.",
+      "evidence": "inferred",
+      "source_ids": [
+        "S1"
+      ],
+      "evidence_note": "Advice inferred from the documented page-picker behaviour.",
+      "links": []
+    }
+  ],
+  "requirements": [
+    {
+      "title": "Public connection (not internal) for multi-workspace OAuth",
+      "detail": "Internal connections are single-workspace static tokens; only public connections support OAuth installs in other workspaces.",
+      "severity": "blocker",
+      "evidence": "sourced",
+      "source_ids": [
+        "S2",
+        "S3"
+      ]
+    },
+    {
+      "title": "Installation scope is permanent",
+      "detail": "'Any workspace' vs 'Selected workspaces only' is fixed at creation. Wrong choice means creating a new connection (new client ID) and re-authorizing users.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "S3"
+      ]
+    },
+    {
+      "title": "Redirect URI must be registered and sent consistently",
+      "detail": "Register the redirect URI(s) on the connection. If the authorize request includes redirect_uri, or more than one URI is registered, the token request must include the same redirect_uri.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1"
+      ]
+    },
+    {
+      "title": "Store rotated refresh tokens",
+      "detail": "Each refresh returns a new access + refresh token; the old refresh token stops working. Lifetimes are undocumented.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1",
+        "S6",
+        "S13"
+      ]
+    },
+    {
+      "title": "Privacy policy / terms / support email",
+      "detail": "Older public-integration forms asked for website, privacy policy, terms of use and support email; current Notion docs for connections and listings no longer list them. Have them ready regardless - listing review and enterprise customers will expect them.",
+      "severity": "minor",
+      "evidence": "uncertain",
+      "source_ids": [
+        "S12",
+        "S3",
+        "S4"
+      ],
+      "evidence_note": "Could not see the live portal form (login required); confirm in the portal."
+    },
+    {
+      "title": "Rate limits depend on the customer's Notion plan",
+      "detail": "180 req/min per connection on Free/Plus-type plans vs 600 on Business/Enterprise, plus a shared workspace limit.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "S5",
+        "S7"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "title": "Agent sees no pages",
+      "symptom": "Search returns empty results / object_not_found on pages the user can see in Notion.",
+      "what_to_do": "The user didn't select those pages in the consent page picker (or lacks full access). Have them re-open the connection's access settings in Notion and add the pages, or re-run the connect flow.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S1"
+      ]
+    },
+    {
+      "title": "invalid_grant on refresh",
+      "symptom": "Token refresh returns 400 invalid_grant.",
+      "what_to_do": "You reused an old (rotated) refresh token, or the user removed the connection. Persist the newest refresh token after every refresh; otherwise re-authorize.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S13",
+        "S6"
+      ]
+    },
+    {
+      "title": "429 rate_limited / 529 service_overload",
+      "symptom": "Bursty agent jobs hit 429s, sometimes with waits over a minute.",
+      "what_to_do": "Honour Retry-After (also in additional_data.retry_after), add jittered backoff, and check additional_data.rate_limit_reason to see whether the per-connection or workspace limit was hit.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S5"
+      ]
+    },
+    {
+      "title": "Can't list on Marketplace",
+      "symptom": "Listing option unavailable for your connection.",
+      "what_to_do": "The connection was created with 'Selected workspaces only' (or is internal). Create a new public connection with 'Any workspace' and migrate users.",
+      "evidence": "sourced",
+      "source_ids": [
+        "S4",
+        "S3"
+      ]
+    },
+    {
+      "title": "Authorization URL field is empty",
+      "symptom": "Portal shows no Authorization URL for the connection.",
+      "what_to_do": "Notion's docs say this field populates after the connection is submitted for review. You can also construct the URL yourself (api.notion.com/v1/oauth/authorize with client_id, redirect_uri, response_type=code, owner=user); Composio builds it for you.",
+      "evidence": "uncertain",
+      "source_ids": [
+        "S1"
+      ],
+      "evidence_note": "The meaning of 'submitted for review' for a non-listed connection is not documented."
+    }
+  ],
+  "agent_can": [
+    "Recommend public vs internal and the installation scope",
+    "Prepare all form values (name, redirect URI, capability list) and draft privacy policy / terms text",
+    "Create the Composio custom auth config via SDK once given client ID/secret",
+    "Run test authorizations and verify page access and token refresh",
+    "Implement and test Retry-After/backoff handling",
+    "Draft Marketplace listing copy"
+  ],
+  "you_must": [
+    "Log into the Notion Developer portal and create the public connection",
+    "Choose the permanent installation scope",
+    "Copy the client secret into Composio (or hand it to the agent securely)",
+    "Complete the consent screen and pick pages during testing",
+    "Submit and respond to Marketplace listing review, if listing"
+  ],
+  "ready_to_paste": [
+    {
+      "label": "Redirect URI (Composio custom auth)",
+      "value": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+      "note": "From Composio's white-labeling docs and its Notion setup page. Must match exactly, HTTPS, no trailing slash. Older Composio auth configs may show a v1 callback - always use the one displayed in your auth config."
+    },
+    {
+      "label": "Capabilities (typical agent)",
+      "value": "Read content, Update content, Insert content, Read comments, Insert comments, Read user information without email addresses",
+      "note": "Notion has no scope strings; tick these in the connection's Capabilities section. Drop write capabilities for read-only agents."
+    },
+    {
+      "label": "Connection description",
+      "value": "<Your product> connects to the Notion pages and databases you choose so its AI assistant can read, summarize and update them on your behalf. It can only access pages you explicitly share during setup, and you can revoke access at any time from Notion.",
+      "note": "Use for the portal description and as a starting point for a Marketplace listing."
+    },
+    {
+      "label": "Authorize URL template",
+      "value": "https://api.notion.com/v1/oauth/authorize?client_id=<CLIENT_ID>&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv3%2Ftoolkits%2Fauth%2Fcallback&state=<STATE>",
+      "note": "Composio builds this for you; useful for manual testing."
+    }
+  ],
+  "open_questions": [
+    "What does 'submitted for review' mean for a public connection that is not listed on the Marketplace - is it automatic, instant, or a human review?",
+    "What are the actual lifetimes of Notion access and refresh tokens now that refresh exists? (expires_in is not in the response schema)",
+    "When is refresh_token null in the token response?",
+    "Does the current portal form still require website, privacy policy, terms of use and support email for public connections?",
+    "Does Composio offer a managed Notion OAuth app (check composio_managed_auth_schemes)?",
+    "What is the exact workspace-level rate limit per plan?"
+  ],
+  "sources": [
+    {
+      "id": "S1",
+      "title": "Notion - Authorization (public connections, OAuth flow)",
+      "url": "https://developers.notion.com/guides/get-started/authorization",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S2",
+      "title": "Notion - Overview (connection types)",
+      "url": "https://developers.notion.com/guides/get-started/overview",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S3",
+      "title": "Notion - Public connections",
+      "url": "https://developers.notion.com/guides/get-started/public-connections",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S4",
+      "title": "Notion - List on the Marketplace",
+      "url": "https://developers.notion.com/guides/get-started/marketplace-listing",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S5",
+      "title": "Notion - Request limits",
+      "url": "https://developers.notion.com/reference/request-limits",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S6",
+      "title": "Notion API reference - Refresh a token",
+      "url": "https://developers.notion.com/reference/refresh-a-token",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S7",
+      "title": "Notion developer changelog",
+      "url": "https://developers.notion.com/page/changelog",
+      "kind": "official_docs",
+      "accessed": "2026-10-28",
+      "note": "2026-06-08 fresh token pair per authorization; 2026-06-16 workspace rate limit; 2026-09-09 per-connection 600/180 per minute."
+    },
+    {
+      "id": "S8",
+      "title": "Composio - White-labeling (callback URI)",
+      "url": "https://docs.composio.dev/docs/auth-configuration/white-labeling",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S9",
+      "title": "Composio - How to create Notion OAuth2 credentials",
+      "url": "https://composio.dev/auth/notion",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S10",
+      "title": "Composio KB - Notion toolkit guide",
+      "url": "https://docs.composio.dev/kb/guide/toolkits-notion.md",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S11",
+      "title": "Composio - Managed auth toolkit directory",
+      "url": "https://docs.composio.dev/toolkits/managed-auth",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28",
+      "note": "List did not render server-side ('Loading toolkits...')."
+    },
+    {
+      "id": "S12",
+      "title": "Classmethod - Trying Notion API with a public integration (2021)",
+      "url": "https://dev.classmethod.jp/articles/try-notion-api-with-public-integration/",
+      "kind": "community",
+      "accessed": "2026-10-28",
+      "note": "Dated 2021-07-20; shows the old form fields."
+    },
+    {
+      "id": "S13",
+      "title": "Nango - Notion OAuth refresh token invalid_grant",
+      "url": "https://nango.dev/blog/notion-oauth-refresh-token-invalid-grant",
+      "kind": "community",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S14",
+      "title": "Notion API reference - Create a token",
+      "url": "https://developers.notion.com/reference/create-a-token",
+      "kind": "official_docs",
+      "accessed": "2026-10-28",
+      "note": "Response schema: access_token, refresh_token (nullable), bot_id, workspace_id...; no expires_in."
+    }
+  ],
+  "probes": [
+    {
+      "name": "Authorize URL with dummy client_id",
+      "target": "https://api.notion.com/v1/oauth/authorize?client_id=test_invalid_client&response_type=code&owner=user&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback",
+      "method": "WebFetch GET authorize URL with client_id=test_invalid_client",
+      "observed": "HTTP 302 Found with Location https://app.notion.com/install-integration. Fetching that page returned only a generic Notion app shell (title 'Notion', meta description) with no error text.",
+      "conclusion": "Authorize endpoint is live and hands off to the web app install page; unknown client IDs are not rejected server-side at this step - any error is rendered client-side, which a non-JS fetch can't see.",
+      "ok": true,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Developer portal login wall",
+      "target": "https://app.notion.com/developers/connections",
+      "method": "WebFetch GET developer portal URL unauthenticated",
+      "observed": "Returned the generic Notion SPA shell (title 'Notion'); no redirect, no visible login form in the server-rendered HTML.",
+      "conclusion": "Inconclusive: the portal is a client-rendered app; login gating could not be observed without a browser session.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "curl header probe",
+      "target": "https://api.notion.com/v1/oauth/authorize",
+      "method": "curl -D - via sandbox proxy",
+      "observed": "Proxy refused the CONNECT tunnel with HTTP 403; no request reached Notion.",
+      "conclusion": "Blocked by environment; no information about Notion.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Unauthenticated API call",
+      "target": "https://api.notion.com/v1/users/me",
+      "method": "WebFetch GET without token",
+      "observed": "Not fetched: URL not on the session allowlist.",
+      "conclusion": "Blocked by environment.",
+      "ok": null,
+      "at": "2026-10-28"
+    }
+  ],
+  "verification": {
+    "status": "spot_checked",
+    "checked_on": "2026-10-28",
+    "method": "Re-opened Notion's authorization, overview, public-connections, marketplace-listing, request-limits, refresh-a-token and create-a-token pages plus the developer changelog to confirm connection types, permanent installation scope, page picker, refresh rotation, rate limits and listing review time; confirmed the Composio callback in Composio's white-labeling doc and Notion setup page; ran an authorize-URL probe.",
+    "corrections": [
+      {
+        "claim": "Notion OAuth access tokens never expire and there are no refresh tokens",
+        "was": "Long-standing advice: Notion public-integration tokens are permanent; no refresh flow.",
+        "now": "The token response includes a refresh_token and Notion documents a refresh grant on /v1/oauth/token that rotates both tokens. Lifetimes are still undocumented, so implement refresh and store the newest pair.",
+        "source_ids": [
+          "S6",
+          "S14",
+          "S1"
+        ]
+      },
+      {
+        "claim": "Notion's rate limit is an average of 3 requests per second per integration",
+        "was": "~3 req/s per integration.",
+        "now": "Since 2026-09-09: per-connection fixed 60 s window of 600 req/min (Business/Enterprise) or 180 req/min (other plans), plus a workspace-wide limit (2026-06-16) and ~3 req/s for data source queries.",
+        "source_ids": [
+          "S5",
+          "S7"
+        ]
+      },
+      {
+        "claim": "Re-authorizing returns the existing access token",
+        "was": "Re-running OAuth for an already-connected bot returned the same token.",
+        "now": "Since 2026-06-08, new public connections get a fresh access_token and refresh_token on every successful authorization; existing connections keep old behaviour.",
+        "source_ids": [
+          "S7"
+        ]
+      },
+      {
+        "claim": "Create integrations at notion.so/my-integrations",
+        "was": "'Integrations' managed at notion.so/my-integrations (still cited by Composio's setup page).",
+        "now": "Docs now call them 'connections' and point to the Developer portal at app.notion.com/developers/connections (Build > Public connections).",
+        "source_ids": [
+          "S3",
+          "S9"
+        ]
+      }
+    ],
+    "unverified": [
+      "Whether the live portal form still requires website, privacy policy, terms and support email (only a 2021 community article shows them)",
+      "Meaning of 'submitted for review' before the Authorization URL appears for non-listed connections",
+      "Access/refresh token lifetimes",
+      "Whether Composio has a managed Notion OAuth app",
+      "Login-wall behaviour of the Developer portal (SPA, inconclusive probe)"
+    ]
+  },
+  "method": "curated",
+  "generated_at": "2026-10-28T00:00:00Z",
+  "model": "research-agent"
+}

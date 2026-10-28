@@ -1,0 +1,602 @@
+[
+ {
+  "name": "Gmail",
+  "slug": "gmail",
+  "website": "gmail.com",
+  "category": "Email"
+ },
+ {
+  "name": "Google Calendar",
+  "slug": "google_calendar",
+  "website": "calendar.google.com",
+  "category": "Calendar"
+ },
+ {
+  "name": "Google Drive",
+  "slug": "google_drive",
+  "website": "drive.google.com",
+  "category": "Files"
+ },
+ {
+  "name": "Google Sheets",
+  "slug": "google_sheets",
+  "website": "sheets.google.com",
+  "category": "Productivity"
+ },
+ {
+  "name": "Google Docs",
+  "slug": "google_docs",
+  "website": "docs.google.com",
+  "category": "Productivity"
+ },
+ {
+  "name": "YouTube",
+  "slug": "youtube",
+  "website": "youtube.com",
+  "category": "Media"
+ },
+ {
+  "name": "Outlook",
+  "slug": "outlook",
+  "website": "outlook.com",
+  "category": "Email"
+ },
+ {
+  "name": "Microsoft Teams",
+  "slug": "microsoft_teams",
+  "website": "teams.microsoft.com",
+  "category": "Chat"
+ },
+ {
+  "name": "OneDrive",
+  "slug": "one_drive",
+  "website": "onedrive.live.com",
+  "category": "Files"
+ },
+ {
+  "name": "SharePoint",
+  "slug": "share_point",
+  "website": "sharepoint.com",
+  "category": "Files"
+ },
+ {
+  "name": "Slack",
+  "slug": "slack",
+  "website": "slack.com",
+  "category": "Chat"
+ },
+ {
+  "name": "Discord",
+  "slug": "discord",
+  "website": "discord.com",
+  "category": "Chat"
+ },
+ {
+  "name": "Zoom",
+  "slug": "zoom",
+  "website": "zoom.us",
+  "category": "Meetings"
+ },
+ {
+  "name": "Notion",
+  "slug": "notion",
+  "website": "notion.so",
+  "category": "Productivity"
+ },
+ {
+  "name": "Linear",
+  "slug": "linear",
+  "website": "linear.app",
+  "category": "Project management"
+ },
+ {
+  "name": "Jira",
+  "slug": "jira",
+  "website": "atlassian.com",
+  "category": "Project management"
+ },
+ {
+  "name": "Confluence",
+  "slug": "confluence",
+  "website": "atlassian.com",
+  "category": "Docs"
+ },
+ {
+  "name": "Asana",
+  "slug": "asana",
+  "website": "asana.com",
+  "category": "Project management"
+ },
+ {
+  "name": "Trello",
+  "slug": "trello",
+  "website": "trello.com",
+  "category": "Project management"
+ },
+ {
+  "name": "Monday.com",
+  "slug": "monday",
+  "website": "monday.com",
+  "category": "Project management"
+ },
+ {
+  "name": "ClickUp",
+  "slug": "clickup",
+  "website": "clickup.com",
+  "category": "Project management"
+ },
+ {
+  "name": "Basecamp",
+  "slug": "basecamp",
+  "website": "basecamp.com",
+  "category": "Project management"
+ },
+ {
+  "name": "Wrike",
+  "slug": "wrike",
+  "website": "wrike.com",
+  "category": "Project management"
+ },
+ {
+  "name": "Smartsheet",
+  "slug": "smartsheet",
+  "website": "smartsheet.com",
+  "category": "Project management"
+ },
+ {
+  "name": "Airtable",
+  "slug": "airtable",
+  "website": "airtable.com",
+  "category": "Database"
+ },
+ {
+  "name": "Coda",
+  "slug": "coda",
+  "website": "coda.io",
+  "category": "Docs"
+ },
+ {
+  "name": "Miro",
+  "slug": "miro",
+  "website": "miro.com",
+  "category": "Whiteboard"
+ },
+ {
+  "name": "Figma",
+  "slug": "figma",
+  "website": "figma.com",
+  "category": "Design"
+ },
+ {
+  "name": "Canva",
+  "slug": "canva",
+  "website": "canva.com",
+  "category": "Design"
+ },
+ {
+  "name": "GitHub",
+  "slug": "github",
+  "website": "github.com",
+  "category": "Developer tools"
+ },
+ {
+  "name": "GitLab",
+  "slug": "gitlab",
+  "website": "gitlab.com",
+  "category": "Developer tools"
+ },
+ {
+  "name": "Bitbucket",
+  "slug": "bitbucket",
+  "website": "bitbucket.org",
+  "category": "Developer tools"
+ },
+ {
+  "name": "Vercel",
+  "slug": "vercel",
+  "website": "vercel.com",
+  "category": "Developer tools"
+ },
+ {
+  "name": "Sentry",
+  "slug": "sentry",
+  "website": "sentry.io",
+  "category": "Developer tools"
+ },
+ {
+  "name": "Datadog",
+  "slug": "datadog",
+  "website": "datadoghq.com",
+  "category": "Developer tools"
+ },
+ {
+  "name": "PagerDuty",
+  "slug": "pagerduty",
+  "website": "pagerduty.com",
+  "category": "Developer tools"
+ },
+ {
+  "name": "Salesforce",
+  "slug": "salesforce",
+  "website": "salesforce.com",
+  "category": "CRM"
+ },
+ {
+  "name": "HubSpot",
+  "slug": "hubspot",
+  "website": "hubspot.com",
+  "category": "CRM"
+ },
+ {
+  "name": "Pipedrive",
+  "slug": "pipedrive",
+  "website": "pipedrive.com",
+  "category": "CRM"
+ },
+ {
+  "name": "Zoho CRM",
+  "slug": "zoho",
+  "website": "zoho.com",
+  "category": "CRM"
+ },
+ {
+  "name": "Attio",
+  "slug": "attio",
+  "website": "attio.com",
+  "category": "CRM"
+ },
+ {
+  "name": "Close",
+  "slug": "close",
+  "website": "close.com",
+  "category": "CRM"
+ },
+ {
+  "name": "Intercom",
+  "slug": "intercom",
+  "website": "intercom.com",
+  "category": "Support"
+ },
+ {
+  "name": "Zendesk",
+  "slug": "zendesk",
+  "website": "zendesk.com",
+  "category": "Support"
+ },
+ {
+  "name": "Freshdesk",
+  "slug": "freshdesk",
+  "website": "freshdesk.com",
+  "category": "Support"
+ },
+ {
+  "name": "Front",
+  "slug": "front",
+  "website": "front.com",
+  "category": "Support"
+ },
+ {
+  "name": "Help Scout",
+  "slug": "helpscout",
+  "website": "helpscout.com",
+  "category": "Support"
+ },
+ {
+  "name": "Mailchimp",
+  "slug": "mailchimp",
+  "website": "mailchimp.com",
+  "category": "Marketing"
+ },
+ {
+  "name": "Constant Contact",
+  "slug": "constant_contact",
+  "website": "constantcontact.com",
+  "category": "Marketing"
+ },
+ {
+  "name": "Klaviyo",
+  "slug": "klaviyo",
+  "website": "klaviyo.com",
+  "category": "Marketing"
+ },
+ {
+  "name": "Typeform",
+  "slug": "typeform",
+  "website": "typeform.com",
+  "category": "Forms"
+ },
+ {
+  "name": "SurveyMonkey",
+  "slug": "surveymonkey",
+  "website": "surveymonkey.com",
+  "category": "Forms"
+ },
+ {
+  "name": "Calendly",
+  "slug": "calendly",
+  "website": "calendly.com",
+  "category": "Calendar"
+ },
+ {
+  "name": "Cal.com",
+  "slug": "cal",
+  "website": "cal.com",
+  "category": "Calendar"
+ },
+ {
+  "name": "DocuSign",
+  "slug": "docusign",
+  "website": "docusign.com",
+  "category": "E-signature"
+ },
+ {
+  "name": "Dropbox Sign",
+  "slug": "dropbox_sign",
+  "website": "sign.dropbox.com",
+  "category": "E-signature"
+ },
+ {
+  "name": "Dropbox",
+  "slug": "dropbox",
+  "website": "dropbox.com",
+  "category": "Files"
+ },
+ {
+  "name": "Box",
+  "slug": "box",
+  "website": "box.com",
+  "category": "Files"
+ },
+ {
+  "name": "Evernote",
+  "slug": "evernote",
+  "website": "evernote.com",
+  "category": "Notes"
+ },
+ {
+  "name": "Todoist",
+  "slug": "todoist",
+  "website": "todoist.com",
+  "category": "Tasks"
+ },
+ {
+  "name": "Webflow",
+  "slug": "webflow",
+  "website": "webflow.com",
+  "category": "Website"
+ },
+ {
+  "name": "WordPress.com",
+  "slug": "wordpress",
+  "website": "wordpress.com",
+  "category": "Website"
+ },
+ {
+  "name": "Shopify",
+  "slug": "shopify",
+  "website": "shopify.com",
+  "category": "E-commerce"
+ },
+ {
+  "name": "Squarespace",
+  "slug": "squarespace",
+  "website": "squarespace.com",
+  "category": "Website"
+ },
+ {
+  "name": "Wix",
+  "slug": "wix",
+  "website": "wix.com",
+  "category": "Website"
+ },
+ {
+  "name": "Etsy",
+  "slug": "etsy",
+  "website": "etsy.com",
+  "category": "E-commerce"
+ },
+ {
+  "name": "eBay",
+  "slug": "ebay",
+  "website": "ebay.com",
+  "category": "E-commerce"
+ },
+ {
+  "name": "Amazon Seller (SP-API)",
+  "slug": "amazon_seller",
+  "website": "sellercentral.amazon.com",
+  "category": "E-commerce"
+ },
+ {
+  "name": "Stripe",
+  "slug": "stripe",
+  "website": "stripe.com",
+  "category": "Payments"
+ },
+ {
+  "name": "PayPal",
+  "slug": "paypal",
+  "website": "paypal.com",
+  "category": "Payments"
+ },
+ {
+  "name": "Square",
+  "slug": "square",
+  "website": "squareup.com",
+  "category": "Payments"
+ },
+ {
+  "name": "QuickBooks",
+  "slug": "quickbooks",
+  "website": "quickbooks.intuit.com",
+  "category": "Accounting"
+ },
+ {
+  "name": "Xero",
+  "slug": "xero",
+  "website": "xero.com",
+  "category": "Accounting"
+ },
+ {
+  "name": "FreshBooks",
+  "slug": "freshbooks",
+  "website": "freshbooks.com",
+  "category": "Accounting"
+ },
+ {
+  "name": "Wave",
+  "slug": "wave",
+  "website": "waveapps.com",
+  "category": "Accounting"
+ },
+ {
+  "name": "Gusto",
+  "slug": "gusto",
+  "website": "gusto.com",
+  "category": "HR & payroll"
+ },
+ {
+  "name": "Deel",
+  "slug": "deel",
+  "website": "deel.com",
+  "category": "HR & payroll"
+ },
+ {
+  "name": "BambooHR",
+  "slug": "bamboohr",
+  "website": "bamboohr.com",
+  "category": "HR & payroll"
+ },
+ {
+  "name": "Workday",
+  "slug": "workday",
+  "website": "workday.com",
+  "category": "HR & payroll"
+ },
+ {
+  "name": "Greenhouse",
+  "slug": "greenhouse",
+  "website": "greenhouse.io",
+  "category": "Recruiting"
+ },
+ {
+  "name": "Lever",
+  "slug": "lever",
+  "website": "lever.co",
+  "category": "Recruiting"
+ },
+ {
+  "name": "LinkedIn",
+  "slug": "linkedin",
+  "website": "linkedin.com",
+  "category": "Social"
+ },
+ {
+  "name": "X (Twitter)",
+  "slug": "twitter",
+  "website": "x.com",
+  "category": "Social"
+ },
+ {
+  "name": "Facebook Pages",
+  "slug": "facebook",
+  "website": "facebook.com",
+  "category": "Social"
+ },
+ {
+  "name": "Instagram",
+  "slug": "instagram",
+  "website": "instagram.com",
+  "category": "Social"
+ },
+ {
+  "name": "Threads",
+  "slug": "threads",
+  "website": "threads.net",
+  "category": "Social"
+ },
+ {
+  "name": "TikTok",
+  "slug": "tiktok",
+  "website": "tiktok.com",
+  "category": "Social"
+ },
+ {
+  "name": "Pinterest",
+  "slug": "pinterest",
+  "website": "pinterest.com",
+  "category": "Social"
+ },
+ {
+  "name": "Reddit",
+  "slug": "reddit",
+  "website": "reddit.com",
+  "category": "Social"
+ },
+ {
+  "name": "Spotify",
+  "slug": "spotify",
+  "website": "spotify.com",
+  "category": "Media"
+ },
+ {
+  "name": "Strava",
+  "slug": "strava",
+  "website": "strava.com",
+  "category": "Fitness"
+ },
+ {
+  "name": "Fitbit",
+  "slug": "fitbit",
+  "website": "fitbit.com",
+  "category": "Fitness"
+ },
+ {
+  "name": "Google Ads",
+  "slug": "google_ads",
+  "website": "ads.google.com",
+  "category": "Advertising"
+ },
+ {
+  "name": "Meta Ads",
+  "slug": "meta_ads",
+  "website": "facebook.com/business",
+  "category": "Advertising"
+ },
+ {
+  "name": "LinkedIn Ads",
+  "slug": "linkedin_ads",
+  "website": "business.linkedin.com",
+  "category": "Advertising"
+ },
+ {
+  "name": "Google Analytics",
+  "slug": "google_analytics",
+  "website": "analytics.google.com",
+  "category": "Analytics"
+ },
+ {
+  "name": "Mixpanel",
+  "slug": "mixpanel",
+  "website": "mixpanel.com",
+  "category": "Analytics"
+ },
+ {
+  "name": "Amplitude",
+  "slug": "amplitude",
+  "website": "amplitude.com",
+  "category": "Analytics"
+ },
+ {
+  "name": "Snowflake",
+  "slug": "snowflake",
+  "website": "snowflake.com",
+  "category": "Data"
+ },
+ {
+  "name": "Twitch",
+  "slug": "twitch",
+  "website": "twitch.tv",
+  "category": "Media"
+ }
+]

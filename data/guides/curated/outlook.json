@@ -1,0 +1,560 @@
+{
+  "slug": "outlook",
+  "app_name": "Outlook",
+  "website": "https://learn.microsoft.com/graph/outlook-mail-concept-overview",
+  "category": "Email",
+  "tagline": "No Graph app review, but Mail.Read now needs tenant admin consent by default in most customer orgs; plan for admin outreach",
+  "tier": 2,
+  "tier_reason": "Registering an Entra app and getting credentials is instant, and Microsoft Graph has no app-review gate. The friction comes from each customer tenant. Since late 2025, Microsoft's default user consent policy excludes Mail.Read and Mail.ReadWrite, so in most work tenants an admin must consent. Unverified multitenant apps also face blocked or 'risky' consent. Publisher verification is free and fast if you already have a Partner Center account. Personal Outlook.com accounts can consent themselves.",
+  "time": {
+    "active_effort": "30-90 min for app registration and testing; 1-3 h more for publisher verification if you need to set up Partner Center",
+    "active_hours_low": 0.5,
+    "active_hours_high": 5,
+    "wait": "None from Microsoft for Graph. Partner Center verification of a new partner account can take days. The real wait is each customer admin granting consent (hours to weeks, outside your control).",
+    "wait_days_low": 0,
+    "wait_days_high": 10,
+    "summary": "We can ship today with no Microsoft review, but most business customers' IT admins will have to approve our app before employees can connect Outlook mail, so we should get publisher-verified and prepare an admin-consent link.",
+    "evidence": "inferred",
+    "source_ids": [
+      "M4",
+      "M5",
+      "M3"
+    ]
+  },
+  "composio": {
+    "managed_oauth": "unknown",
+    "toolkit_slug": "outlook",
+    "note": "Composio's Outlook knowledge-base guide refers to a 'Composio-managed Outlook app' and says Composio does not publish its client_id. No toolkit page confirming a managed auth scheme could be opened, so this stays unknown. Composio's Outlook credentials guide walks through bringing your own Entra app.",
+    "evidence": "uncertain",
+    "source_ids": [
+      "C2",
+      "C3"
+    ]
+  },
+  "oauth": {
+    "developer_console_url": "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
+    "docs_url": "https://learn.microsoft.com/graph/auth-register-app-v2",
+    "authorize_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+    "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    "oauth_version": "OAuth 2.0 authorization code (Microsoft identity platform v2.0)",
+    "pkce": "Supported; required for SPA redirect URIs. Optional for confidential Web clients. Not probed this session.",
+    "refresh_tokens": "Request offline_access to get refresh tokens. Default lifetime is 90 days (24 hours for 'spa' redirect URIs). Each refresh returns a new refresh token; store it and discard the old one. Tokens are revoked by password resets or admin or user revocation.",
+    "scopes_note": "Delegated Microsoft Graph Mail.Read, Mail.ReadWrite and Mail.Send are marked 'admin consent not required' in the permission reference. However, Microsoft's managed default user-consent policy (microsoft-user-default-recommended) excludes Mail.Read, Mail.ReadWrite and the other Mail read variants, so in tenants on that default only an admin can consent. Mail.Send is not in the exclusion list. Application (app-only) Mail permissions always need admin consent.",
+    "example_scopes": [
+      "openid",
+      "profile",
+      "email",
+      "offline_access",
+      "User.Read",
+      "Mail.Read",
+      "Mail.Send"
+    ],
+    "account_needed": "Any Microsoft Entra tenant. A free tenant from an Azure free account or the M365 Developer Program works. To register you need the Application Developer role, or a tenant that allows users to register apps. Publisher verification needs a Microsoft AI Cloud Partner Program (Partner Center) account and a DNS-verified custom domain in the tenant."
+  },
+  "start_here": "In the Microsoft Entra admin center, go to App registrations > New registration and choose 'Accounts in any organizational directory and personal Microsoft accounts', using a work tenant that has a custom domain (needed later for publisher verification).",
+  "steps": [
+    {
+      "phase": "prepare",
+      "title": "Choose your tenant, account type and scopes",
+      "owner": "you_with_agent",
+      "effort": "20-30 min",
+      "detail": "**Supported account types**:\n- **Single tenant** (*Accounts in this organizational directory only*): internal tools only.\n- **Multitenant** (*Accounts in any organizational directory*): SaaS for work and school accounts.\n- **Multitenant + personal**: also Outlook.com and Hotmail accounts. This is the usual choice for an agent product, and Composio's Outlook guide recommends it.\n- **Personal Microsoft accounts only**.\n\nRegister in a **work tenant** with a **custom DNS-verified domain**, not `*.onmicrosoft.com` only. Publisher verification needs both, and apps registered with a personal Microsoft account can't be verified. Pick delegated scopes: `offline_access`, `User.Read`, `Mail.Read` (and `Mail.ReadWrite` / `Mail.Send` only if needed).",
+      "agent_help": "Map tool actions to minimal delegated Graph permissions; explain which ones will trigger admin consent.",
+      "links": [
+        "https://learn.microsoft.com/graph/auth-register-app-v2",
+        "https://composio.dev/auth/outlook"
+      ],
+      "evidence": "sourced",
+      "source_ids": [
+        "M1",
+        "M3",
+        "C3"
+      ]
+    },
+    {
+      "phase": "register",
+      "title": "Register the app with the Composio redirect URI",
+      "owner": "you",
+      "effort": "10 min",
+      "detail": "**Entra admin center > Identity > Applications > App registrations > New registration**.\n- Name: your product name (shown on consent prompts).\n- Supported account types: as chosen above.\n- Redirect URI: platform **Web**, value `https://backend.composio.dev/api/v3/toolkits/auth/callback`.\n\nCopy the **Application (client) ID**. Use the **Web** platform, not **SPA**: SPA refresh tokens die after 24 hours and need PKCE in the browser.",
+      "agent_help": "Prepare the exact field values; double-check the redirect URI string.",
+      "links": [
+        "https://entra.microsoft.com/"
+      ],
+      "evidence": "sourced",
+      "source_ids": [
+        "M1",
+        "M6",
+        "C1"
+      ]
+    },
+    {
+      "phase": "configure",
+      "title": "Create a client secret and calendar its expiry",
+      "owner": "you",
+      "effort": "5 min",
+      "detail": "**Certificates & secrets > Client secrets > New client secret**. The maximum lifetime is **24 months**; Microsoft recommends less than 12. The secret **Value** is shown only once, so copy it straight into the Composio auth config (Outlook toolkit, *use your own developer credentials*). Set a reminder to rotate it before expiry, or every connection will start failing with an invalid-client error.",
+      "links": [],
+      "evidence": "sourced",
+      "source_ids": [
+        "M1"
+      ]
+    },
+    {
+      "phase": "configure",
+      "title": "Add delegated Microsoft Graph permissions and branding",
+      "owner": "you",
+      "effort": "10-15 min",
+      "detail": "**API permissions > Add a permission > Microsoft Graph > Delegated**: `offline_access`, `openid`, `profile`, `email`, `User.Read`, `Mail.Read` (+ `Mail.Send` / `Mail.ReadWrite` if needed). Do **not** add Application permissions unless you need background access to all mailboxes, which always needs admin consent. Under **Branding & properties**, set the logo, home page, terms of service and privacy statement URLs, and **Publisher domain**, which must be a verified custom domain.",
+      "agent_help": "Draft the privacy statement and terms text; list the permissions to add.",
+      "links": [
+        "https://graphpermissions.merill.net/permission/Mail.Read.html"
+      ],
+      "evidence": "sourced",
+      "source_ids": [
+        "M2",
+        "M3",
+        "M4"
+      ]
+    },
+    {
+      "phase": "test",
+      "title": "Test with a personal account and with a second work tenant",
+      "owner": "you_with_agent",
+      "effort": "20-40 min",
+      "detail": "Run Composio's connect flow:\n1. With an **Outlook.com** account: user consent should work.\n2. With a user in a **different work tenant** that is on Microsoft's default settings: expect the **Need admin approval** screen for Mail.Read, plus an **Unverified** publisher label if you aren't verified yet.\n3. As that tenant's admin, grant consent, then retry as the normal user with a fresh connection.",
+      "agent_help": "Drive the test connections, call list-messages, and capture any AADSTS codes.",
+      "links": [],
+      "evidence": "inferred",
+      "evidence_note": "Expected from the documented default consent policy and consent-experience docs; not executed this session.",
+      "source_ids": [
+        "M4",
+        "M7",
+        "C2"
+      ]
+    },
+    {
+      "phase": "review",
+      "title": "Get publisher verification (strongly recommended)",
+      "owner": "you",
+      "effort": "15 min if Partner Center exists; 1-3 h to set one up",
+      "wait": "Minutes once prerequisites are met; Partner Center account verification can take days",
+      "detail": "Requirements:\n- a **Microsoft AI Cloud Partner Program** (formerly MPN) account with a verified Partner One ID, as the partner global account (not a location ID);\n- the app's tenant associated with that account;\n- the publisher domain matching the verification email's domain, or a DNS-verified tenant domain;\n- the person doing it holds Application Administrator or Cloud Application Administrator and is a Partner Center Partner Admin or Account Admin, signed in with MFA.\n\nGo to **App registration > Branding & properties > Publisher verification > Add Partner One ID**. It's free. It adds the blue verified badge. Users can then consent to multitenant apps registered after 8 Nov 2020 under risk-based step-up consent, and admins can allow user consent for verified publishers. It does **not** bypass the Mail.Read exclusion in the default consent policy.",
+      "links": [
+        "https://learn.microsoft.com/en-ca/entra/identity-platform/publisher-verification-overview"
+      ],
+      "evidence": "sourced",
+      "source_ids": [
+        "M5",
+        "M4"
+      ]
+    },
+    {
+      "phase": "launch",
+      "title": "Give customer admins an admin-consent path",
+      "owner": "you_with_agent",
+      "effort": "30 min",
+      "detail": "For work tenants, send IT an admin-consent URL: `https://login.microsoftonline.com/{customer-tenant-or-organizations}/adminconsent?client_id={your-client-id}`. Alternatively, they can grant consent in **Enterprise applications > your app > Permissions** after a first sign-in attempt, or approve a request through the admin consent workflow. Explain each permission and why you need it. Admin consent is per tenant: after it is granted, each user just reconnects. Composio's guide warns that if the admin uses the in-flow admin link, the admin's own mailbox may be connected instead of the user's.",
+      "agent_help": "Generate per-customer admin-consent links and an IT-facing permissions explainer.",
+      "links": [
+        "https://learn.microsoft.com/entra/identity/enterprise-apps/configure-admin-consent-workflow"
+      ],
+      "evidence": "inferred",
+      "evidence_note": "The admin-consent endpoint format is from general knowledge of the v2 platform and was not re-opened; the per-tenant behaviour and the admin-mailbox caveat are sourced.",
+      "source_ids": [
+        "M7",
+        "C2"
+      ]
+    },
+    {
+      "phase": "launch",
+      "title": "Optional: Microsoft 365 Certification",
+      "owner": "you",
+      "effort": "days-weeks",
+      "detail": "Microsoft 365 App Compliance (Publisher Attestation, then Certification) is **optional** for Graph SaaS apps but helps with enterprise security reviews. Certification is a yearly paid independent audit (contract with Claranet) that includes pentesting. Some tenants may require it. Publisher Attestation alone usually takes about an hour.",
+      "links": [
+        "https://learn.microsoft.com/microsoft-365-app-certification/overview"
+      ],
+      "evidence": "sourced",
+      "source_ids": [
+        "M8"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "title": "Default user consent excludes Mail.Read / Mail.ReadWrite",
+      "detail": "In tenants using the Microsoft-managed setting ('Let Microsoft manage your consent settings', policy microsoft-user-default-recommended, the default for new tenants), users cannot consent to Mail.Read, Mail.ReadWrite, Mail.ReadBasic, the Shared variants, MailboxSettings.*, Calendars.*, Contacts.* and similar permissions. An admin must consent. Mail.Send is not on the exclusion list. Popular mail clients (Apple Mail, Thunderbird and others) are exempt through a separate mail-client policy that doesn't apply to your app. Spot-check addition: the same Microsoft-managed policy also blocks user consent for Calendars.* and Chat.* (Nov 2025), and Contacts.*, People.Read and Tasks.* (rollout to July 2026). If your agent also touches calendar or contacts, plan for admin consent in customer tenants. Mail.Send was not on the reported lists.",
+      "severity": "blocker",
+      "applies_when": "Work or school users in tenants on Microsoft's default consent settings",
+      "evidence": "sourced",
+      "source_ids": [
+        "M4",
+        "M9",
+        "M10",
+        "S11"
+      ]
+    },
+    {
+      "title": "Unverified multitenant apps face blocked or 'risky' consent",
+      "detail": "With risk-based step-up consent, users generally can't consent to multitenant apps registered after 8 Nov 2020 that aren't publisher-verified and ask for more than basic profile access. Publisher verification needs a Partner One ID and a custom verified domain.",
+      "severity": "important",
+      "applies_when": "Multitenant app used by other organizations",
+      "evidence": "sourced",
+      "source_ids": [
+        "M5"
+      ]
+    },
+    {
+      "title": "Client secret expires (max 24 months)",
+      "detail": "Secrets can't be set longer than 24 months (recommended under 12). Rotate the secret before it expires and update the Composio auth config.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "M1"
+      ]
+    },
+    {
+      "title": "Register in a work tenant with a custom domain",
+      "detail": "Publisher verification is unavailable for apps registered with a personal Microsoft account or with only a *.onmicrosoft.com domain.",
+      "severity": "important",
+      "evidence": "sourced",
+      "source_ids": [
+        "M5"
+      ]
+    },
+    {
+      "title": "No Microsoft app review for Graph",
+      "detail": "No Microsoft review gate was found for delegated Graph mail access by third-party apps. Publisher verification and M365 Certification are both optional programs.",
+      "severity": "minor",
+      "evidence": "inferred",
+      "evidence_note": "Inferred from the absence of any review requirement in the registration, publisher verification and certification docs; Microsoft does not state it in one place.",
+      "source_ids": [
+        "M1",
+        "M5",
+        "M8"
+      ]
+    },
+    {
+      "title": "Refresh token lifetime",
+      "detail": "Refresh tokens last 90 days by default (24 hours for SPA redirect URIs) and rotate on every use. Password resets and admin revocation kill them early.",
+      "severity": "minor",
+      "evidence": "sourced",
+      "source_ids": [
+        "M6"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "title": "Need admin approval",
+      "symptom": "Work users see 'Need admin approval' (often with AADSTS90094 or AADSTS65001) when connecting Outlook.",
+      "what_to_do": "Expected for Mail.Read under the default policy. Send the tenant admin an admin-consent link, or ask them to enable the admin consent workflow. You can't remove this from your side, except by limiting to Mail.Send-only features.",
+      "evidence": "inferred",
+      "evidence_note": "The screen is documented; the specific AADSTS codes are from general knowledge and were not observed.",
+      "source_ids": [
+        "M7",
+        "M4"
+      ]
+    },
+    {
+      "title": "Unverified publisher / 'may be risky' warning",
+      "symptom": "The consent screen shows 'Unverified' and users in other tenants can't consent.",
+      "what_to_do": "Complete publisher verification with a Partner One ID.",
+      "evidence": "sourced",
+      "source_ids": [
+        "M5",
+        "M7"
+      ]
+    },
+    {
+      "title": "Redirect URI mismatch",
+      "symptom": "AADSTS50011: the redirect URI in the request doesn't match the app's registered URIs.",
+      "what_to_do": "Add https://backend.composio.dev/api/v3/toolkits/auth/callback under the Web platform, matched exactly.",
+      "evidence": "inferred",
+      "evidence_note": "Standard Entra error; not probed (authorize endpoint blocked by sandbox).",
+      "source_ids": [
+        "C1"
+      ]
+    },
+    {
+      "title": "Wrong account type",
+      "symptom": "Personal Outlook.com users get an error saying the app isn't configured for Microsoft accounts (or work users from other tenants can't sign in).",
+      "what_to_do": "Change Supported account types in the app Manifest/Authentication, or re-register as multitenant + personal.",
+      "evidence": "inferred",
+      "source_ids": [
+        "M1"
+      ]
+    },
+    {
+      "title": "Secret expired",
+      "symptom": "All connections fail at token refresh with AADSTS7000222 (expired client secret).",
+      "what_to_do": "Create a new secret, update Composio, and set a rotation reminder.",
+      "evidence": "inferred",
+      "evidence_note": "The 24-month expiry is sourced; the error code is from general knowledge.",
+      "source_ids": [
+        "M1"
+      ]
+    },
+    {
+      "title": "403 on Graph mail calls",
+      "symptom": "Connection succeeds but Graph returns 403 for a mail action.",
+      "what_to_do": "The scope is missing. Add the permission, have admins re-consent if needed, and have the user reconnect.",
+      "evidence": "sourced",
+      "source_ids": [
+        "C2",
+        "M7"
+      ]
+    }
+  ],
+  "agent_can": [
+    "Choose minimal delegated Graph permissions and predict which need admin consent",
+    "Draft privacy statement, terms and an IT-admin permissions explainer",
+    "Prepare app registration field values and the Composio auth-config payload",
+    "Generate per-customer admin-consent URLs",
+    "Run test connections and decode AADSTS errors",
+    "Track client-secret expiry and remind you to rotate"
+  ],
+  "you_must": [
+    "Sign in to the Entra admin center with a role that can register apps",
+    "Create the client secret and store it securely",
+    "Add and DNS-verify a custom domain in the tenant",
+    "Enroll in Partner Center / AI Cloud Partner Program and complete publisher verification with MFA",
+    "Get each customer's tenant admin to grant consent",
+    "Sign the Claranet contract and pay if pursuing M365 Certification"
+  ],
+  "ready_to_paste": [
+    {
+      "label": "Redirect URI (Web platform, Composio custom auth)",
+      "value": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+      "note": "Confirmed in Composio's white-labeling docs and its Outlook OAuth guide on 2026-10-28."
+    },
+    {
+      "label": "Delegated scopes",
+      "value": "openid profile email offline_access User.Read Mail.Read Mail.Send",
+      "note": "Mail.Read needs admin consent in default-policy tenants; add Mail.ReadWrite only if the agent moves or deletes mail."
+    },
+    {
+      "label": "Admin consent URL template",
+      "value": "https://login.microsoftonline.com/organizations/adminconsent?client_id=<YOUR_CLIENT_ID>",
+      "note": "Replace organizations with the customer's tenant ID or domain to target one tenant. Not re-verified against docs this session."
+    },
+    {
+      "label": "App description",
+      "value": "<AppName> is an AI assistant that, at the user's request, reads and summarizes their Outlook mail and drafts or sends replies. It accesses only the signed-in user's mailbox via delegated Microsoft Graph permissions and never uses mail data for advertising."
+    },
+    {
+      "label": "IT admin justification template",
+      "value": "Permission: <Mail.Read>. Type: Delegated (the signed-in user's own mailbox only; no access to other mailboxes). Used for: <feature>. Data handling: <retention, encryption, deletion>. Publisher: <Company>, verified publisher (Partner One ID <id>)."
+    }
+  ],
+  "open_questions": [
+    "Does Composio offer a managed Outlook OAuth app (auth scheme) in the current toolkit catalog, and is it publisher-verified?",
+    "Will Microsoft add Mail.Send to the managed default consent exclusions in a future update?",
+    "Exact current Outlook-service Graph throttling limits (per app per mailbox)",
+    "How long Partner Center account verification currently takes for a new company"
+  ],
+  "sources": [
+    {
+      "id": "M1",
+      "title": "Register an application with the Microsoft identity platform (Graph)",
+      "url": "https://learn.microsoft.com/graph/auth-register-app-v2",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "M2",
+      "title": "Graph permission Mail.Read (merill.net mirror of the permissions reference)",
+      "url": "https://graphpermissions.merill.net/permission/Mail.Read.html",
+      "kind": "community",
+      "accessed": "2026-10-28",
+      "note": "The official permissions-reference page could not be fetched; this mirror is generated from Microsoft's metadata."
+    },
+    {
+      "id": "M3",
+      "title": "Configure how users consent to applications",
+      "url": "https://learn.microsoft.com/en-gb/entra/identity/enterprise-apps/configure-user-consent",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "M4",
+      "title": "Manage app consent policies (Microsoft recommended user consent policy)",
+      "url": "https://learn.microsoft.com/en-gb/entra/identity/enterprise-apps/manage-app-consent-policies?pivots=ms-graph",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "M5",
+      "title": "Publisher verification",
+      "url": "https://learn.microsoft.com/en-ca/entra/identity-platform/publisher-verification-overview",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "M6",
+      "title": "Refresh tokens in the Microsoft identity platform",
+      "url": "https://learn.microsoft.com/en-ca/entra/identity-platform/refresh-tokens",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "M7",
+      "title": "Application consent experience",
+      "url": "https://learn.microsoft.com/entra/identity-platform/application-consent-experience",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "M8",
+      "title": "Microsoft 365 App Certification overview",
+      "url": "https://learn.microsoft.com/microsoft-365-app-certification/overview",
+      "kind": "official_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "M9",
+      "title": "Topedia: Microsoft-managed default consent policy now blocks 20 additional permissions",
+      "url": "https://blog.topedia.com/posts/microsoft-managed-default-app-consent-policy-now-blocks-20-additional-permissions",
+      "kind": "community",
+      "accessed": "2026-10-28",
+      "note": "Timeline: Files/Sites Aug 2025, Mail and Exchange Oct-Nov 2025."
+    },
+    {
+      "id": "M10",
+      "title": "MC1304287: Exchange APIs secure-by-default changes (Message Center mirror)",
+      "url": "https://mc.merill.net/message/MC1304287",
+      "kind": "community",
+      "accessed": "2026-10-28",
+      "note": "Contacts, People and Tasks added June-July 2026."
+    },
+    {
+      "id": "C1",
+      "title": "Composio: White-labeling (custom OAuth callback URL)",
+      "url": "https://docs.composio.dev/docs/auth-configuration/white-labeling",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "C2",
+      "title": "Composio KB: Outlook toolkit guide",
+      "url": "https://docs.composio.dev/kb/guide/toolkits-outlook.md",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "C3",
+      "title": "Composio: How to create OAuth2 credentials for Outlook",
+      "url": "https://composio.dev/auth/outlook",
+      "kind": "composio_docs",
+      "accessed": "2026-10-28"
+    },
+    {
+      "id": "S11",
+      "title": "Topedia: Microsoft-managed default consent policy blocks additional permissions (Nov 2025 & May 2026)",
+      "url": "https://blog.topedia.com/posts/microsoft-managed-default-app-consent-policy-will-block-8-additional-permissions",
+      "kind": "other",
+      "accessed": "2026-10-28"
+    }
+  ],
+  "probes": [
+    {
+      "name": "Authorize endpoint with dummy client_id",
+      "target": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=test_invalid_client&...",
+      "method": "WebFetch, then curl via sandbox proxy",
+      "observed": "WebFetch refused (URL not on session allowlist); curl got 'CONNECT tunnel failed, response 403'.",
+      "conclusion": "Not tested; the expected AADSTS700016 / AADSTS900144-style error is unconfirmed.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "OpenID configuration (common v2.0)",
+      "target": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+      "method": "WebFetch and curl GET",
+      "observed": "Blocked by sandbox allowlist / proxy 403.",
+      "conclusion": "Endpoints in this guide are from docs and general knowledge, not a live fetch.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Console login wall",
+      "target": "https://entra.microsoft.com/ and https://portal.azure.com/",
+      "method": "curl GET",
+      "observed": "Proxy connect_rejected (403) for both hosts.",
+      "conclusion": "Login redirect not confirmed.",
+      "ok": null,
+      "at": "2026-10-28"
+    },
+    {
+      "name": "Composio callback URI in docs",
+      "target": "https://docs.composio.dev/docs/auth-configuration/white-labeling",
+      "method": "WebFetch docs page",
+      "observed": "Docs give https://backend.composio.dev/api/v3/toolkits/auth/callback; Composio's Outlook credentials guide uses the same URI.",
+      "conclusion": "Redirect URI confirmed from two Composio pages.",
+      "ok": true,
+      "at": "2026-10-28"
+    }
+  ],
+  "verification": {
+    "status": "spot_checked",
+    "checked_on": "2026-10-28",
+    "method": "Re-opened Microsoft's Graph app-registration page (account types, platforms, 24-month secret cap), the publisher verification overview, the consent-policy pages (configure-user-consent and manage-app-consent-policies, which list the exclusions in microsoft-user-default-recommended), the refresh token and consent experience pages, and the M365 Certification overview. Cross-checked consent-policy rollout dates against Topedia and the MC1304287 mirror. Checked Composio's white-labeling, Outlook KB and Outlook credentials pages. Live probes were blocked by the sandbox. Independent spot-check (2026-10-28) by the project author, separate from the research agent: checked the Microsoft-managed consent policy lists [S11]; Mail.Read/ReadWrite blocked as stated, plus calendar/contacts/tasks permissions the guide had not covered.",
+    "corrections": [
+      {
+        "claim": "Delegated Mail.Read doesn't need admin consent, so users can connect themselves",
+        "was": "True under the legacy default (users could consent to any permission not marked admin-required)",
+        "now": "Since Aug-Nov 2025, the Microsoft-managed default policy (microsoft-user-default-recommended) excludes Mail.Read, Mail.ReadWrite and related permissions from user consent, so admin consent is needed in tenants on default settings. Existing consents were not affected.",
+        "source_ids": [
+          "M4",
+          "M9",
+          "M10"
+        ]
+      },
+      {
+        "claim": "Publisher verification lets users consent to your multitenant app",
+        "was": "The 2020-era guidance treated verification as the unblocker",
+        "now": "It lifts the risk-based block on unverified apps, but it doesn't override the default policy's Mail.* exclusions",
+        "source_ids": [
+          "M5",
+          "M4"
+        ]
+      },
+      {
+        "claim": "Client secrets can be set to never expire",
+        "was": "A 'Never' option once existed",
+        "now": "Maximum 24 months; Microsoft recommends under 12",
+        "source_ids": [
+          "M1"
+        ]
+      },
+      {
+        "claim": "The policy is called microsoft-user-default-low",
+        "was": "Older docs and blogs name 'low' as the recommended setting",
+        "now": "The Microsoft-managed setting maps to microsoft-user-default-recommended; 'low' is a separate verified-publisher plus low-impact option",
+        "source_ids": [
+          "M3",
+          "M4"
+        ]
+      },
+      {
+        "claim": "Which delegated permissions need admin consent by default",
+        "was": "Mail.Read / Mail.ReadWrite",
+        "now": "Also Calendars.*, Chat.*, Mailbox*, and since mid-2026 Contacts.*, People.Read, Tasks.* (secondary source; confirm in your tenant's consent policy)",
+        "source_ids": [
+          "S11"
+        ]
+      }
+    ],
+    "unverified": [
+      "Live behaviour of the authorize endpoint, OpenID configuration and console login wall (all probes blocked)",
+      "Whether Composio offers a managed Outlook auth scheme (toolkit page not reachable)",
+      "Specific AADSTS error codes quoted in blockers (general knowledge)",
+      "Admin consent URL format (not re-opened in docs this session)",
+      "Outlook-service Graph throttling limits (page section not retrievable)",
+      "Whether existing customer tenants have moved to the Microsoft-managed setting or kept legacy settings (varies by tenant)"
+    ]
+  },
+  "method": "curated",
+  "generated_at": "2026-10-28T00:00:00Z",
+  "model": "research-agent"
+}
