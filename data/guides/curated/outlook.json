@@ -272,7 +272,7 @@
       "symptom": "AADSTS50011: the redirect URI in the request doesn't match the app's registered URIs.",
       "what_to_do": "Add https://backend.composio.dev/api/v3/toolkits/auth/callback under the Web platform, matched exactly.",
       "evidence": "inferred",
-      "evidence_note": "Standard Entra error; not probed (authorize endpoint blocked by sandbox).",
+      "evidence_note": "Standard Entra error; not probed (authorize endpoint blocked by the research network).",
       "source_ids": [
         "C1"
       ]
@@ -461,7 +461,7 @@
     {
       "name": "Authorize endpoint with dummy client_id",
       "target": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=test_invalid_client&...",
-      "method": "WebFetch, then curl via sandbox proxy",
+      "method": "WebFetch, then curl via the research network's proxy",
       "observed": "WebFetch refused (URL not on session allowlist); curl got 'CONNECT tunnel failed, response 403'.",
       "conclusion": "Not tested; the expected AADSTS700016 / AADSTS900144-style error is unconfirmed.",
       "ok": null,
@@ -471,7 +471,7 @@
       "name": "OpenID configuration (common v2.0)",
       "target": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
       "method": "WebFetch and curl GET",
-      "observed": "Blocked by sandbox allowlist / proxy 403.",
+      "observed": "Blocked by the research network (proxy 403).",
       "conclusion": "Endpoints in this guide are from docs and general knowledge, not a live fetch.",
       "ok": null,
       "at": "2026-10-28"
@@ -498,7 +498,7 @@
   "verification": {
     "status": "spot_checked",
     "checked_on": "2026-10-28",
-    "method": "Re-opened Microsoft's Graph app-registration page (account types, platforms, 24-month secret cap), the publisher verification overview, the consent-policy pages (configure-user-consent and manage-app-consent-policies, which list the exclusions in microsoft-user-default-recommended), the refresh token and consent experience pages, and the M365 Certification overview. Cross-checked consent-policy rollout dates against Topedia and the MC1304287 mirror. Checked Composio's white-labeling, Outlook KB and Outlook credentials pages. Live probes were blocked by the sandbox. Independent spot-check (2026-10-28) by the project author, separate from the research agent: checked the Microsoft-managed consent policy lists [S11]; Mail.Read/ReadWrite blocked as stated, plus calendar/contacts/tasks permissions the guide had not covered.",
+    "method": "Re-opened Microsoft's Graph app-registration page (account types, platforms, 24-month secret cap), the publisher verification overview, the consent-policy pages (configure-user-consent and manage-app-consent-policies, which list the exclusions in microsoft-user-default-recommended), the refresh token and consent experience pages, and the M365 Certification overview. Cross-checked consent-policy rollout dates against Topedia and the MC1304287 mirror. Checked Composio's white-labeling, Outlook KB and Outlook credentials pages. Live probes were blocked by the research network. Independent spot-check (2026-10-28) by the project author, separate from the research agent: checked the Microsoft-managed consent policy lists [S11]; Mail.Read/ReadWrite blocked as stated, plus calendar/contacts/tasks permissions the guide had not covered.",
     "corrections": [
       {
         "claim": "Delegated Mail.Read doesn't need admin consent, so users can connect themselves",

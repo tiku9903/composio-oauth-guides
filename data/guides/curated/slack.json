@@ -549,7 +549,7 @@
     {
       "name": "curl header probe",
       "target": "https://slack.com/oauth/v2/authorize and https://api.slack.com/apps",
-      "method": "curl -D - via sandbox proxy",
+      "method": "curl -D - via the research network's proxy",
       "observed": "Proxy refused CONNECT with HTTP 403 for both; nothing reached Slack.",
       "conclusion": "Blocked by environment.",
       "ok": null,

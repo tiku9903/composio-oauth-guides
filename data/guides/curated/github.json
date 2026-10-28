@@ -434,7 +434,7 @@
       "target": "https://github.com/login/oauth/authorize?client_id=test_invalid_client&redirect_uri=https://backend.composio.dev/api/v3/toolkits/auth/callback&scope=repo",
       "method": "WebFetch GET, then curl GET via session proxy",
       "observed": "WebFetch refused (URL not on session allowlist). curl got HTTP 403 from the session egress proxy, so GitHub was never reached.",
-      "conclusion": "Blocked by the sandbox; no evidence about GitHub's behaviour.",
+      "conclusion": "Blocked by the research network; no evidence about GitHub's behaviour.",
       "ok": null,
       "at": "2026-10-28"
     },
@@ -451,7 +451,7 @@
       "name": "Token endpoint with dummy client",
       "target": "https://github.com/login/oauth/access_token",
       "method": "curl POST with client_id=test_invalid_client",
-      "observed": "HTTP 415 with a message about JSON Content-Type pointing at an Anthropic docs URL. The response came from an intercepting sandbox proxy, not GitHub.",
+      "observed": "HTTP 415 with a message about JSON Content-Type from the proxy rather than GitHub. The response came from an intercepting network proxy, not GitHub.",
       "conclusion": "Not a GitHub response; inconclusive.",
       "ok": null,
       "at": "2026-10-28"
@@ -460,7 +460,7 @@
   "verification": {
     "status": "spot_checked",
     "checked_on": "2026-10-28",
-    "method": "Re-opened GitHub docs (OAuth app creation, authorization, org access restrictions, Apps vs OAuth Apps, GitHub App token refresh), the 2026-08-14 GitHub changelog, and Composio custom-auth, white-labeling, GitHub KB and managed-auth pages, to confirm callback URL rules, token lifetimes, org approval behaviour and the Composio callback. Live probes of github.com were blocked by the sandbox. Independent spot-check (2026-10-28) by the project author, separate from the research agent: re-read the GitHub changelog [S4] and confirmed: up to 10 callback URIs; short-lived tokens on by default for NEW OAuth apps (8h access / 6-month refresh), opt-in for existing apps; per-URI wildcard matching toggle.",
+    "method": "Re-opened GitHub docs (OAuth app creation, authorization, org access restrictions, Apps vs OAuth Apps, GitHub App token refresh), the 2026-08-14 GitHub changelog, and Composio custom-auth, white-labeling, GitHub KB and managed-auth pages, to confirm callback URL rules, token lifetimes, org approval behaviour and the Composio callback. Live probes of github.com were blocked by the research network. Independent spot-check (2026-10-28) by the project author, separate from the research agent: re-read the GitHub changelog [S4] and confirmed: up to 10 callback URIs; short-lived tokens on by default for NEW OAuth apps (8h access / 6-month refresh), opt-in for existing apps; per-URI wildcard matching toggle.",
     "corrections": [
       {
         "claim": "OAuth Apps can only have one callback URL",

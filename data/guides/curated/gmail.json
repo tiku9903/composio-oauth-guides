@@ -332,7 +332,7 @@
       "symptom": "Error 400: redirect_uri_mismatch on the Google sign-in page.",
       "what_to_do": "Register exactly https://backend.composio.dev/api/v3/toolkits/auth/callback (or your proxy URL) on the Web client, with no trailing slash. The URI in the Composio auth config must match it.",
       "evidence": "inferred",
-      "evidence_note": "Standard Google OAuth behaviour; not probed this session because the authorize endpoint was blocked by the sandbox.",
+      "evidence_note": "Standard Google OAuth behaviour; not probed this session because the authorize endpoint was blocked by the research network.",
       "source_ids": [
         "C1"
       ]
@@ -541,7 +541,7 @@
     {
       "name": "Authorize endpoint with dummy client_id",
       "target": "https://accounts.google.com/o/oauth2/v2/auth?client_id=test_invalid_client&...",
-      "method": "WebFetch, then curl via sandbox proxy, of the authorize URL with client_id=test_invalid_client and scope gmail.readonly",
+      "method": "WebFetch, then curl via the research network's proxy, of the authorize URL with client_id=test_invalid_client and scope gmail.readonly",
       "observed": "WebFetch refused (URL not on session allowlist); curl got 'CONNECT tunnel failed, response 403' from the egress proxy. No response from Google.",
       "conclusion": "Not tested. The expected 'Error 401: invalid_client' page remains unconfirmed this session.",
       "ok": null,
@@ -551,7 +551,7 @@
       "name": "OpenID configuration",
       "target": "https://accounts.google.com/.well-known/openid-configuration",
       "method": "WebFetch and curl GET",
-      "observed": "Blocked by sandbox allowlist / proxy 403; no document retrieved.",
+      "observed": "Blocked by the research network (proxy 403); no document retrieved.",
       "conclusion": "Endpoint URLs in this guide come from Google docs and general knowledge, not a live fetch.",
       "ok": null,
       "at": "2026-10-28"
@@ -578,7 +578,7 @@
   "verification": {
     "status": "spot_checked",
     "checked_on": "2026-10-28",
-    "method": "Re-opened Google's Gmail scope table, the Audience/publishing-status help page, the sensitive and restricted scope verification pages, the CASA, annual recertification and exceptions help pages, the Workspace API-controls page, the Gmail quota page, and Composio's white-labeling and managed-auth pages. Cross-checked CASA prices against the TAC price list and two community write-ups. Live endpoint probes were blocked by the sandbox. Independent spot-check (2026-10-28) by the project author, separate from the research agent: re-read Google's Gmail scope table [G1]: gmail.send = sensitive; gmail.readonly, gmail.modify, gmail.compose, gmail.metadata, mail.google.com = restricted; gmail.labels = non-sensitive. Matches the guide.",
+    "method": "Re-opened Google's Gmail scope table, the Audience/publishing-status help page, the sensitive and restricted scope verification pages, the CASA, annual recertification and exceptions help pages, the Workspace API-controls page, the Gmail quota page, and Composio's white-labeling and managed-auth pages. Cross-checked CASA prices against the TAC price list and two community write-ups. Live endpoint probes were blocked by the research network. Independent spot-check (2026-10-28) by the project author, separate from the research agent: re-read Google's Gmail scope table [G1]: gmail.send = sensitive; gmail.readonly, gmail.modify, gmail.compose, gmail.metadata, mail.google.com = restricted; gmail.labels = non-sensitive. Matches the guide.",
     "corrections": [
       {
         "claim": "gmail.send is a restricted scope that needs CASA",
@@ -625,7 +625,7 @@
       }
     ],
     "unverified": [
-      "Live behaviour of the authorize endpoint, the OpenID configuration and the console login wall (all probes blocked by the sandbox)",
+      "Live behaviour of the authorize endpoint, the OpenID configuration and the console login wall (all probes blocked by the research network)",
       "Exact error text shown to the 101st user",
       "Current real-world restricted-scope review queue times (Google says only 'several weeks')",
       "CASA prices and turnaround (vendor and community sources, 2024-2025)",

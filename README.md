@@ -140,7 +140,7 @@ prompts to improve its products; the agent only sends public documentation text 
 
 ## Limitations
 
-- **The curated guides' live probes are mostly inconclusive.** They were written in a sandbox whose network blocked
+- **The curated guides' live probes are mostly inconclusive.** They were written from a network that blocked
   the providers, and each guide says so on the page. Run `python scripts/reprobe.py` from a normal network to replace
   them with real observations. The deployed agent probes live on every run.
 - **Probes prove less than approval.** Without the developer's credentials an agent can show that endpoints exist,

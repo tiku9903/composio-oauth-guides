@@ -409,7 +409,7 @@
       "target": "https://api.linear.app/oauth/token",
       "method": "curl POST grant_type=authorization_code with client_id=test_invalid_client",
       "observed": "curl: CONNECT tunnel failed, response 403 (session egress proxy).",
-      "conclusion": "Blocked by the sandbox.",
+      "conclusion": "Blocked by the research network.",
       "ok": null,
       "at": "2026-10-28"
     }

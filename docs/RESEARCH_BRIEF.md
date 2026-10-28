@@ -7,7 +7,7 @@ before real users can connect.
 
 Output: one JSON file per app at `data/guides/curated/<slug>.json` that validates against
 `oauthguides.schema.Guide` (read `oauthguides/schema.py` first — field descriptions matter).
-Validate with, from the repo root `/home/claude/oauth-guides`:
+Validate with, from the repo root:
 
     python3 -c "import json,sys; from oauthguides.schema import Guide; g=Guide(**json.load(open('data/guides/curated/<slug>.json'))); print('ok', g.dangling_source_ids())"
 

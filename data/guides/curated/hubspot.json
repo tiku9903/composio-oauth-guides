@@ -175,7 +175,7 @@
       "owner": "you_with_agent",
       "effort": "4-8 h",
       "wait": "~10 business days to first feedback; up to ~60 days overall",
-      "detail": "Requirements: **3 active, unique installs** in unaffiliated production accounts with OAuth API/webhook/extension activity in the last 30 days (your own, test, sandbox and free team accounts do not count); agree to the Technology Partner Program Agreement; OAuth as the only auth method; live public URLs (<=250 chars) for setup docs, install button, support, ToS and privacy policy; a **Shared data** table matching your scopes; only scopes you use. One app may be in review at a time. Since 2026-03-31 reviewers reportedly want demo videos/walkthroughs instead of test logins (community source).",
+      "detail": "Requirements: **3 active, unique installs** in unaffiliated production accounts with OAuth API/webhook/extension activity in the last 30 days (your own, test, research network and free team accounts do not count); agree to the Technology Partner Program Agreement; OAuth as the only auth method; live public URLs (<=250 chars) for setup docs, install button, support, ToS and privacy policy; a **Shared data** table matching your scopes; only scopes you use. One app may be in review at a time. Since 2026-03-31 reviewers reportedly want demo videos/walkthroughs instead of test logins (community source).",
       "agent_help": "Agent can draft setup docs, listing copy, the shared-data table from your scopes, and privacy-policy text; check URLs are live.",
       "links": [
         "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements"
@@ -275,7 +275,7 @@
     {
       "title": "Submit button disabled despite 3 installs",
       "symptom": "Listing submit stays greyed out saying 3 active installs are needed.",
-      "what_to_do": "Installs must be OAuth installs in unaffiliated paid/production customer accounts with 2xx API activity in the last 30 days; your own, test and sandbox accounts do not count. Check Development > Monitoring; open a developer support ticket if counts look right.",
+      "what_to_do": "Installs must be OAuth installs in unaffiliated paid/production customer accounts with 2xx API activity in the last 30 days; your own, test and research network accounts do not count. Check Development > Monitoring; open a developer support ticket if counts look right.",
       "evidence": "uncertain",
       "evidence_note": "Community thread answers, consistent with the official 'active install' definition.",
       "source_ids": [
@@ -496,7 +496,7 @@
       "name": "Authorize and token endpoints (curl)",
       "target": "https://app.hubspot.com/oauth/authorize ; https://api.hubapi.com/oauth/v1/token",
       "method": "curl GET authorize with dummy client_id; curl POST token with dummy credentials",
-      "observed": "Both failed at the sandbox egress proxy: 'CONNECT tunnel failed, response 403'. No contact with HubSpot.",
+      "observed": "Both failed at the outbound network proxy: 'CONNECT tunnel failed, response 403'. No contact with HubSpot.",
       "conclusion": "Blocked by this session's network policy, not a HubSpot result.",
       "ok": null,
       "at": "2026-10-28"
@@ -523,7 +523,7 @@
   "verification": {
     "status": "spot_checked",
     "checked_on": "2026-10-28",
-    "method": "Re-opened HubSpot official pages for app creation (CLI/projects), legacy-app deprecation, install limits (changelog + manage-apps), Marketplace listing requirements, OAuth install flow, scopes, token lifetimes and account types; re-opened Composio white-labeling, custom-auth-config and HubSpot KB pages. Live probes to HubSpot were blocked by the sandbox (robots/allowlist/proxy). Independent spot-check (2026-10-28) by the project author, separate from the research agent: confirmed in HubSpot's changelog [H4] the 25-install cap for unlisted marketplace-distribution apps (effective 2025-09-22, enforced on migrated legacy apps); the same post caps privately distributed apps at 10 customers (100 for Solution Partners).",
+    "method": "Re-opened HubSpot official pages for app creation (CLI/projects), legacy-app deprecation, install limits (changelog + manage-apps), Marketplace listing requirements, OAuth install flow, scopes, token lifetimes and account types; re-opened Composio white-labeling, custom-auth-config and HubSpot KB pages. Live probes to HubSpot were blocked by the research network (robots/allowlist/proxy). Independent spot-check (2026-10-28) by the project author, separate from the research agent: confirmed in HubSpot's changelog [H4] the 25-install cap for unlisted marketplace-distribution apps (effective 2025-09-22, enforced on migrated legacy apps); the same post caps privately distributed apps at 10 customers (100 for Solution Partners).",
     "corrections": [
       {
         "claim": "Create a public app in the developer account UI (Apps > Create app)",
@@ -564,7 +564,7 @@
       }
     ],
     "unverified": [
-      "Live authorize/token endpoint behaviour (all probes blocked in this sandbox)",
+      "Live authorize/token endpoint behaviour (all probes blocked from the research network)",
       "Refresh token lifetime and rotation",
       "PKCE support",
       "Real-world review duration beyond HubSpot's stated targets (only one agency blog)",

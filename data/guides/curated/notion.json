@@ -455,7 +455,7 @@
     {
       "name": "curl header probe",
       "target": "https://api.notion.com/v1/oauth/authorize",
-      "method": "curl -D - via sandbox proxy",
+      "method": "curl -D - via the research network's proxy",
       "observed": "Proxy refused the CONNECT tunnel with HTTP 403; no request reached Notion.",
       "conclusion": "Blocked by environment; no information about Notion.",
       "ok": null,
