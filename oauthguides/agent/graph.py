@@ -38,7 +38,7 @@ from ..tools.fetch import fetch_many
 from ..tools.probes import probe_authorize, probe_composio, probe_console, probe_oidc_discovery
 from ..tools.search import SearchHit, classify_url, rank_hits, search, search_many
 from . import prompts
-from .models import AppIdentity, Critique, GuideDraft, PageExtraction
+from .models import AppIdentity, BatchExtraction, Critique, GuideDraft, PageExtraction
 
 
 class AgentState(TypedDict, total=False):
@@ -225,27 +225,45 @@ async def research(state: AgentState) -> dict:
     return {"pages": pages, "warnings": warnings}
 
 
+def _batches(pages: list[dict], limit: int) -> list[list[dict]]:
+    out, cur, size = [], [], 0
+    for p in pages:
+        n = len(p["text"]) + 200
+        if cur and size + n > limit:
+            out.append(cur)
+            cur, size = [], 0
+        cur.append(p)
+        size += n
+    return out + ([cur] if cur else [])
+
+
 async def extract(state: AgentState) -> dict:
+    """Read pages in as few model calls as possible: free tiers cap requests per day, not tokens."""
     ident = AppIdentity(**state["identity"])
     pages = state.get("pages", [])
-    sem = asyncio.Semaphore(max(1, settings.extract_concurrency))
-
-    async def one(p: dict) -> tuple[str, dict]:
-        async with sem:
-            try:
-                ex: PageExtraction = await call_structured(PageExtraction, prompts.EXTRACT.format(
-                    context=_ctx(ident.app_name), sid=p["sid"], url=p["url"], kind=p["kind"],
-                    app=ident.app_name, text=p["text"]), "fast", f"extract {p['sid']}")
-            except Exception as e:
-                emit("warn", f"{p['sid']}: extraction failed ({type(e).__name__})", stage="extract")
-                return p["sid"], PageExtraction(relevant=False).model_dump()
-            emit("read", f"{p['sid']} {p['title'][:70] or p['url']}: {len(ex.facts)} facts", stage="extract",
-                 sid=p["sid"], facts=len(ex.facts))
-            return p["sid"], ex.model_dump()
-
-    emit("stage", f"Extracting facts from {len(pages)} pages", stage="extract")
-    results = await asyncio.gather(*(one(p) for p in pages))
-    return {"extractions": dict(results)}
+    batches = _batches(pages, settings.extract_batch_chars)
+    emit("stage", f"Extracting facts from {len(pages)} pages in {len(batches)} pass{'es' if len(batches) != 1 else ''}",
+         stage="extract")
+    results: dict[str, dict] = {p["sid"]: PageExtraction(relevant=False).model_dump() for p in pages}
+    for b in batches:
+        body = "\n\n".join(f"=== {p['sid']} | {p['kind']} | {p['url']} ===\n{p['text']}" for p in b)
+        try:
+            async with heartbeat("Still reading", "extract"):
+                out: BatchExtraction = await call_structured(BatchExtraction, prompts.EXTRACT_MANY.format(
+                    context=_ctx(ident.app_name), app=ident.app_name, pages=body),
+                    "fast", f"extract {b[0]['sid']}-{b[-1]['sid']}", _warn("extract"))
+        except Exception as e:
+            emit("warn", f"Could not extract {b[0]['sid']}–{b[-1]['sid']} ({type(e).__name__})", stage="extract")
+            continue
+        by_sid = {p["sid"]: p for p in b}
+        for ex in out.pages:
+            sid = ex.sid.strip().upper()
+            if sid not in by_sid:
+                continue
+            results[sid] = PageExtraction(**ex.model_dump(exclude={"sid"})).model_dump()
+            emit("read", f"{sid} {by_sid[sid]['title'][:70] or by_sid[sid]['url']}: {len(ex.facts)} facts",
+                 stage="extract", sid=sid, facts=len(ex.facts))
+    return {"extractions": results}
 
 
 async def early_probes(state: AgentState) -> dict:
@@ -386,7 +404,7 @@ async def verify(state: AgentState) -> dict:
         async with heartbeat("Still verifying", "verify"):
             crit: Critique = await call_structured(Critique, prompts.CRITIQUE.format(
                 context=_ctx(ident.app_name), draft=json.dumps(draft)[:60000], probes=_fmt_probes(probes),
-                facts=_fmt_facts(pages, exs)), "main", "verify", _warn("verify"))
+                facts=_fmt_facts(pages, exs)), "verify", "verify", _warn("verify"))
     except Exception as e:
         emit("warn", f"Critic failed ({type(e).__name__}); applying deterministic checks only", stage="verify")
         crit = Critique()

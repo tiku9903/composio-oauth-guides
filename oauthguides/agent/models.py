@@ -51,6 +51,14 @@ class PageExtraction(BaseModel):
     scopes: list[str] = Field(default_factory=list)
 
 
+class SourceExtraction(PageExtraction):
+    sid: str = Field(description="The S# id of the page these facts come from")
+
+
+class BatchExtraction(BaseModel):
+    pages: list[SourceExtraction] = Field(default_factory=list)
+
+
 class GuideDraft(BaseModel):
     """What the LLM writes. Identity, sources, probes and verification are attached deterministically."""
 

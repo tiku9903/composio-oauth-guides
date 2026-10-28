@@ -30,6 +30,8 @@ class Settings:
     cache_days: int = int(os.getenv("GUIDE_CACHE_DAYS", "7"))
     # Parallel page-extraction calls. Keep low on free model tiers (requests-per-minute limits).
     extract_concurrency: int = int(os.getenv("EXTRACT_CONCURRENCY", "2"))
+    # Characters of page text per extraction call (pages are batched to save daily request quota).
+    extract_batch_chars: int = int(os.getenv("EXTRACT_BATCH_CHARS", "90000"))
     # Per-request timeout and SDK retries, plus a hard wall-clock cap per agent step.
     llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "120"))
     llm_retries: int = int(os.getenv("LLM_RETRIES", "2"))

@@ -22,9 +22,49 @@ from typing import Any, Callable, Optional
 from .config import settings
 
 log = logging.getLogger("oauthguides.llm")
+import warnings  # noqa: E402
+
+warnings.filterwarnings("ignore", message=".*uses fixed sampling defaults.*")
 _factory: Callable[[str], Any] | None = None
 _gemini_models: list[str] | None = None
 _gemini_checked = False
+
+# model name -> unix time when its quota is expected back (daily free-tier limits)
+_exhausted: dict[str, float] = {}
+
+
+class QuotaExhausted(RuntimeError):
+    """Every candidate model has used its free quota for now."""
+
+
+def _retry_seconds(e: Exception) -> float | None:
+    text = str(e)
+    m = re.search(r"retryDelay'?:\s*'?(\d+)s", text) or re.search(r"retry in (?:(\d+)h)?(\d+)m", text)
+    if not m:
+        return None
+    if m.re.pattern.startswith("retry in"):
+        return float(m.group(1) or 0) * 3600 + float(m.group(2)) * 60
+    return float(m.group(1))
+
+
+def _is_daily_quota(e: Exception) -> bool:
+    text = str(e)
+    if "PerDay" in text or "per day" in text.lower():
+        return True
+    secs = _retry_seconds(e)
+    return secs is not None and secs > 300
+
+
+def mark_exhausted(name: str, e: Exception) -> None:
+    secs = _retry_seconds(e) or 6 * 3600
+    _exhausted[name] = time.time() + min(secs, 26 * 3600)
+    log.warning("model %s out of free quota for ~%.1fh; skipping it until then", name, secs / 3600)
+
+
+def _available_now(name: str) -> bool:
+    until = _exhausted.get(name)
+    return until is None or until < time.time()
+
 
 _SKIP = ("tts", "live", "image", "audio", "embed", "transcribe", "translate", "vision", "aqa", "learnlm", "nano")
 
@@ -83,12 +123,18 @@ def candidates(kind: str) -> list[str]:
             pro = [f"google_genai:{n}" for n in avail if "pro" in n]
             configured_ok = [c for c in (primary, fast) if c.split(":", 1)[1] in avail]
             if kind == "main":
-                chain = [c for c in [primary] if c in configured_ok] + flash[:2] + pro[:1] + \
-                        [c for c in [fast] if c in configured_ok] + lite[:1]
+                chain = [c for c in [primary] if c in configured_ok] + flash[:3] + pro[:1] + \
+                        [c for c in [fast] if c in configured_ok] + lite[:2]
+            elif kind == "verify":
+                # Prefer a different flash model than the writer, so each keeps its own daily quota.
+                others = [m for m in flash if m != primary]
+                chain = others[:2] + [c for c in [fast] if c in configured_ok] + lite[:2] + \
+                        [c for c in [primary] if c in configured_ok]
             else:
                 chain = [c for c in [fast] if c in configured_ok] + lite[:2] + flash[:1] + \
                         [c for c in [primary] if c in configured_ok]
-    return list(dict.fromkeys(chain))[:4]
+    chain = [c for c in dict.fromkeys(chain) if _available_now(c)]
+    return chain[:5]
 
 
 def _is_rate_limit(e: Exception) -> bool:
@@ -117,6 +163,11 @@ def structured(model_cls: type, name: str, thinking: bool = True) -> Any:
 async def call_structured(model_cls: type, prompt: str, kind: str = "main", label: str = "",
                           notify: Optional[Callable[[str], None]] = None) -> Any:
     chain = await asyncio.to_thread(candidates, kind)
+    if not chain:
+        soonest = min(_exhausted.values(), default=time.time()) - time.time()
+        raise QuotaExhausted(
+            f"The free AI quota for every available model is used up for now; it resets in about "
+            f"{max(1, round(soonest / 3600))} h. Checked guides still work.")
     last: Exception | None = None
     for i, name in enumerate(chain):
         for thinking in (True, False):
@@ -135,7 +186,12 @@ async def call_structured(model_cls: type, prompt: str, kind: str = "main", labe
                 log.warning("llm fail %s model=%s after %.1fs: %s", label, name, time.monotonic() - t0, err)
                 if thinking and "thinking" in str(e).lower():
                     continue  # retry the same model without the thinking setting
-                if _is_rate_limit(e) and not getattr(e, "_waited", False) and settings.rate_limit_wait > 0:
+                if _is_rate_limit(e) and _is_daily_quota(e):
+                    mark_exhausted(name, e)
+                    if notify:
+                        notify(f"{label}: {name.split(':', 1)[-1]} has used today's free quota; switching model")
+                    break
+                if _is_rate_limit(e) and settings.rate_limit_wait > 0:
                     if notify:
                         notify(f"{label}: {name.split(':', 1)[-1]} is rate-limited; waiting {int(settings.rate_limit_wait)}s and retrying")
                     await asyncio.sleep(settings.rate_limit_wait)
@@ -149,8 +205,11 @@ async def call_structured(model_cls: type, prompt: str, kind: str = "main", labe
                         last = e2
                         log.warning("llm fail %s model=%s after rate-limit wait: %s", label, name, str(e2)[:300])
                 break
-        if i + 1 < len(chain) and notify:
+        if i + 1 < len(chain) and notify and not (_is_rate_limit(last) and _is_daily_quota(last)):
             short = name.split(":", 1)[-1]
             notify(f"{label}: {short} unavailable ({type(last).__name__}); trying {chain[i + 1].split(':', 1)[-1]}")
     assert last is not None
+    if all(not _available_now(c) for c in chain):
+        raise QuotaExhausted("The free AI quota for today is used up on every available model. "
+                             "It resets daily; checked guides still work.") from last
     raise last

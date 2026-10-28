@@ -79,7 +79,9 @@ class JobManager:
                     job.status = "done"
                     job._cond.notify_all()
             except Exception as e:  # surface the reason, don't hang the browser
-                job.error = f"{type(e).__name__}: {e}"
+                from oauthguides.llm import QuotaExhausted
+
+                job.error = str(e) if isinstance(e, QuotaExhausted) else f"{type(e).__name__}: {e}"
                 await job.push({"kind": "error", "message": job.error})
                 async with job._cond:
                     job.status = "error"

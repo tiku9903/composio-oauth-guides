@@ -28,6 +28,7 @@ def _patch(monkeypatch, plan, available=None):
     monkeypatch.setattr(llm, "structured", fake_structured)
     monkeypatch.setattr(llm, "_gemini_checked", True)
     monkeypatch.setattr(llm, "_gemini_models", available)
+    monkeypatch.setattr(llm, "_exhausted", {})
     object.__setattr__(config.settings, "llm_hard_timeout", 0.2)
     object.__setattr__(config.settings, "rate_limit_wait", 0)
     object.__setattr__(config.settings, "model", "google_genai:main-model")
@@ -91,3 +92,40 @@ def test_rate_limit_waits_and_retries_same_model_before_falling_back(monkeypatch
     res = asyncio.run(llm.call_structured(Out, "p", "main", "synthesize", notes.append))
     assert res.ok and calls == [("main-model", True), ("main-model", False)]  # same model, not the lite one
     assert "rate-limited" in notes[0]
+
+
+DAILY = ("429 RESOURCE_EXHAUSTED. Quota exceeded for metric: generate_content_free_tier_requests, limit: 20, "
+         "model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. "
+         "Please retry in 19h48m2.9s. 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier' "
+         "'retryDelay': '71282s'")
+
+
+def test_daily_quota_skips_model_without_waiting_and_remembers_it(monkeypatch):
+    """Exact error from the Render log: waiting 25s is pointless for a per-day limit."""
+    async def daily():
+        raise RuntimeError(DAILY)
+
+    calls = _patch(monkeypatch, [daily, _ok, _ok], available=None)
+    object.__setattr__(config.settings, "rate_limit_wait", 30)   # would hang the test if used
+    res = asyncio.run(llm.call_structured(Out, "p", "main", "synthesize"))
+    assert res.ok and calls == [("main-model", True), ("fast-model", True)]
+    assert "google_genai:main-model" not in llm.candidates("main")   # remembered for next run
+    asyncio.run(llm.call_structured(Out, "p", "main", "synthesize"))
+    assert calls[-1] == ("fast-model", True)
+
+
+def test_all_models_exhausted_gives_a_clear_message(monkeypatch):
+    async def daily():
+        raise RuntimeError(DAILY)
+
+    _patch(monkeypatch, [daily, daily])
+    try:
+        asyncio.run(llm.call_structured(Out, "p", "main", "synthesize"))
+    except llm.QuotaExhausted as e:
+        assert "free AI quota" in str(e) and "checked guides still work" in str(e).lower()
+    else:
+        raise AssertionError("expected QuotaExhausted")
+    try:
+        asyncio.run(llm.call_structured(Out, "p", "main", "synthesize"))
+    except llm.QuotaExhausted as e:
+        assert "resets in about" in str(e)

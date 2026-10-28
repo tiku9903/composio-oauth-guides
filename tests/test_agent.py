@@ -8,7 +8,7 @@ import pytest
 
 from oauthguides import llm
 from oauthguides.agent import graph as G
-from oauthguides.agent.models import AppIdentity, Critique, Adjustment, GuideDraft, PageExtraction, Fact
+from oauthguides.agent.models import AppIdentity, Critique, Adjustment, GuideDraft, PageExtraction, Fact, BatchExtraction, SourceExtraction
 from oauthguides.schema import Probe, Step, Requirement, TimeEstimate, ComposioStatus, OAuthDetails
 from oauthguides.tools.fetch import Page
 from oauthguides.tools.search import SearchHit
@@ -27,6 +27,12 @@ class FakeRunnable:
         if c is PageExtraction:
             return PageExtraction(relevant=True, authorize_url="https://acme.example/oauth/authorize",
                                   facts=[Fact(topic="review", statement="Public apps need review", support="must be reviewed")])
+        if c is BatchExtraction:
+            import re as _re
+            sids = _re.findall(r"=== (S\d+) \|", prompt)
+            return BatchExtraction(pages=[SourceExtraction(
+                sid=sid, relevant=True, authorize_url="https://acme.example/oauth/authorize",
+                facts=[Fact(topic="review", statement="Public apps need review", support="must be reviewed")]) for sid in sids])
         if c is GuideDraft:
             return GuideDraft(
                 tagline="Self-serve app, review for listing", tier=2, tier_reason="listing review",

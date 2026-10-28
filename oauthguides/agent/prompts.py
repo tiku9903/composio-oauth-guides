@@ -39,6 +39,20 @@ names it lists. If the page is irrelevant, return relevant=false and no facts.
 PAGE TEXT:
 {text}"""
 
+EXTRACT_MANY = """\
+{context}
+
+Below are several web pages, each starting with a header line "=== S# | kind | url ===".
+For EACH page return an entry with its sid, and extract ONLY facts that page actually states that \
+matter for creating, configuring, testing or getting approval for an OAuth app for {app} (use topic \
+"lifecycle" for deprecations, shutdown dates, successor APIs or closed programs: these matter most). \
+For each fact give a topic, a self-contained statement in your own words, and a short supporting \
+phrase from that page (max 20 words). Mark confidence low if the page is old, community-written, \
+about a different product, or ambiguous. Also pull out endpoints, console URL and scope names. If a \
+page is irrelevant, return relevant=false and no facts for it. Never attribute a fact to the wrong sid.
+
+{pages}"""
+
 SYNTHESIZE = """\
 {context}
 
@@ -71,6 +85,10 @@ exact redirect URI {redirect}. 'start_here' is ONE concrete first action. Put ev
 uncertainty into open_questions phrased as a question the developer could ask the provider. \
 ready_to_paste: Composio redirect URI, suggested scopes, a 1-2 sentence app description, and \
 (if review exists) a scope-justification template with placeholders.
+
+Write like an experienced engineer leaving notes for a colleague: plain, specific, short sentences. \
+No marketing words (seamless, robust, leverage, empower, effortless, comprehensive, unlock), no \
+filler, no exclamation marks. Prefer exact menu paths, field names, numbers and error strings.
 
 API lifecycle comes first: if any fact says the API is deprecated, shutting down, or replaced by a \
 successor, set `notice` with the dates and the successor, and write the guide for the API a new \
