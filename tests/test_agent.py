@@ -119,3 +119,15 @@ def test_guards_unit():
     assert out["steps"][0]["evidence"] == "uncertain"
     assert out["steps"][1]["evidence"] == "tested"
     assert out["time"]["source_ids"] == []
+
+
+def test_relevance_filter_drops_lookalike_products():
+    from oauthguides.agent.graph import is_relevant
+    from oauthguides.agent.models import AppIdentity
+    ident = AppIdentity(app_name="Cal.com", slug="cal", official_domains=["cal.com"])
+    keep = SearchHit("How to register your own Cal.com OAuth app - Nango", "https://nango.dev/docs/cal-com", "", "q")
+    official = SearchHit("OAuth", "https://cal.com/docs/oauth", "", "q")
+    calendly = SearchHit("Refresh tokens | Calendly Developer", "https://developer.calendly.com/x", "", "q")
+    figma = SearchHit("Pending OAuth App Approval | Figma Forum", "https://forum.figma.com/t/1", "", "q")
+    assert is_relevant(keep, ident) and is_relevant(official, ident)
+    assert not is_relevant(calendly, ident) and not is_relevant(figma, ident)

@@ -118,6 +118,24 @@ def _fmt_facts(pages: list[dict], extractions: dict[str, dict]) -> str:
     return "\n".join(lines) or "(no facts extracted)"
 
 
+def _name_patterns(ident: "AppIdentity") -> list[re.Pattern]:
+    names = {ident.app_name.lower(), ident.app_name.lower().replace(" ", ""), ident.slug.replace("_", " ")}
+    names |= {d.lower() for d in ident.official_domains}
+    names = {n for n in names if len(n) >= 3}
+    return [re.compile(r"(?<![a-z0-9])" + re.escape(n) + r"(?![a-z0-9])") for n in names]
+
+
+def is_relevant(hit: SearchHit, ident: "AppIdentity") -> bool:
+    """Keep official/Composio pages, and other pages only if they name this app as a whole word.
+
+    Stops look-alike products leaking in (e.g. Calendly pages when researching Cal.com).
+    """
+    if classify_url(hit.url, ident.official_domains) in ("official_docs", "official_policy", "composio_docs"):
+        return True
+    text = f"{hit.title} {hit.url} {hit.snippet}".lower()
+    return any(p.search(text) for p in _name_patterns(ident))
+
+
 # ---------------------------------------------------------------- nodes
 
 async def resolve(state: AgentState) -> dict:
@@ -153,7 +171,10 @@ async def research(state: AgentState) -> dict:
     ]))
     emit("stage", f"Searching {len(queries)} angles: registration, scopes, review, partner access, timelines", stage="research")
     hits = await search_many(queries)
-    ranked = rank_hits(hits, ident.official_domains)
+    relevant = [h for h in hits if is_relevant(h, ident)]
+    if len(relevant) < len(hits):
+        emit("stage", f"Dropped {len(hits) - len(relevant)} results about other products", stage="research")
+    ranked = rank_hits(relevant, ident.official_domains)
     chosen, per_host = [], Counter()
     for h in ranked:
         if per_host[h.host] >= 3:
@@ -339,7 +360,13 @@ async def finalize(state: AgentState) -> dict:
     pages, probes, draft = state.get("pages", []), state.get("probes", []), state["draft"]
     crit = state.get("critique", {})
     today = date.today().isoformat()
-    sources = [Source(id=p["sid"], title=p["title"] or p["url"], url=p["url"], kind=p["kind"], accessed=today) for p in pages]
+    exs = state.get("extractions", {})
+    cited = set(draft["time"].get("source_ids", [])) | set(draft["composio"].get("source_ids", []))
+    for sec in ("steps", "requirements", "blockers"):
+        for it in draft.get(sec, []):
+            cited |= set(it.get("source_ids", []))
+    useful = [p for p in pages if p["sid"] in cited or (exs.get(p["sid"]) or {}).get("facts")]
+    sources = [Source(id=p["sid"], title=p["title"] or p["url"], url=p["url"], kind=p["kind"], accessed=today) for p in useful]
     sources += _probe_sources(probes)
     unverified = list(dict.fromkeys([*crit.get("unverified", []), *state.get("warnings", [])]))
     guide = Guide(
