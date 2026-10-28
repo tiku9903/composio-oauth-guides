@@ -114,6 +114,16 @@ The free plan sleeps after a period without visits, and the first request then t
 Live-generated guides are lost when it restarts; curated guides ship with the repo. Any Docker host also works:
 `docker build -t oauth-guides . && docker run -p 8000:8000 --env-file .env oauth-guides`.
 
+### Or: Hugging Face Spaces (free, no card)
+
+Docker Spaces are paid, so this uses the free **Gradio** SDK with `space_app.py` as the entry point. It serves the same
+FastAPI app on port 7860.
+
+1. Create a Space: SDK **Gradio**, template **Blank**, hardware **CPU basic (free)**.
+2. Upload the repo's files, using `deploy/huggingface/README.md` as the Space's `README.md`. That file holds the Space config.
+3. **Settings → Variables and secrets:** add secrets `GEMINI_API_KEY` and `TAVILY_API_KEY`.
+4. Share the direct app URL `https://<user>-<space>.hf.space`.
+
 **Free-tier notes:** Gemini's free tier has per-minute request limits. The agent runs at most two page extractions
 at a time and retries on rate-limit errors, so an investigation may take a little longer. Google may use free-tier
 prompts to improve its products; the agent only sends public documentation text and the app name.
