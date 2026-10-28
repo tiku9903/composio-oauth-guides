@@ -147,6 +147,9 @@ class Guide(BaseModel):
     website: Optional[str] = None
     category: Optional[str] = None
     tagline: str = Field(description="One-line verdict, e.g. 'Instant for testing; Gmail scopes need a paid security assessment for production'")
+    notice: Optional[str] = Field(
+        default=None, description="Must-know warning shown first: API deprecation/shutdown dates, a successor API, a closed program"
+    )
     supports_oauth: Literal["yes", "no", "unclear"] = Field(
         default="yes", description="Whether the provider offers third-party OAuth at all (if 'no', the guide explains the alternative)"
     )

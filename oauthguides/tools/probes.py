@@ -279,7 +279,7 @@ async def probe_composio(toolkit_slug: str) -> Probe:
                 status, url = r.status_code, candidate
                 if r.status_code == 200:
                     body = r.text if candidate.endswith(".md") else html_to_text(r.text)
-                    if len(body) >= 400:
+                    if len(body) >= 150:
                         text = body
                         break
     except Exception as e:

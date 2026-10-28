@@ -190,6 +190,7 @@ async def research(state: AgentState) -> dict:
         f"{name} app review OR verification OR marketplace approval OAuth",
         f"{name} API partner program access requirements",
         f"{name} OAuth app approval how long took",
+        f"{name} API deprecation OR sunset OR shutdown OR migration {date.today().year}",
     ]))
     emit("stage", f"Searching {len(queries)} angles: registration, scopes, review, partner access, timelines", stage="research")
     hits = await search_many(queries)
@@ -332,6 +333,14 @@ _ITEM = re.compile(r"^(steps|requirements|blockers)\[(\d+)\]$")
 _ID = re.compile(r"\b[SP]\d{1,3}\b")
 
 
+def clean_link(url: str) -> str | None:
+    """Drop junk links (redirect loops, login bounces, non-URLs); trim query strings off docs links."""
+    url = (url or "").strip()
+    if not url.startswith("http") or len(url) > 300 or url.count("%25") > 3 or "not_logged_in" in url:
+        return None
+    return url
+
+
 def apply_guards(draft: dict, source_kinds: dict[str, str]) -> tuple[dict, list[str]]:
     """Deterministic evidence rules. Returns (draft, notes). Pure function; unit-tested."""
     notes: list[str] = []
@@ -434,6 +443,9 @@ async def finalize(state: AgentState) -> dict:
     warnings = state.get("warnings", [])
     unread = [w for w in warnings if w.startswith("Could not read")]
     unverified = list(dict.fromkeys([*crit.get("unverified", []), *[w for w in warnings if w not in unread]]))
+    for sec in ("steps",):
+        for it in draft.get(sec, []):
+            it["links"] = [clean_link(l) for l in it.get("links", []) if clean_link(l)]
     guide = Guide(
         slug=ident.slug, app_name=ident.app_name, website=ident.website,
         **{k: v for k, v in draft.items() if k in GuideDraft.model_fields},

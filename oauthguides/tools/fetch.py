@@ -60,7 +60,10 @@ async def fetch_page(url: str, limit: int | None = None) -> Page:
         if "html" in ctype or "xml" in ctype or ctype.startswith("text/"):
             body = r.text
             text = html_to_text(body) if "html" in ctype else body
-            return Page(url, str(r.url), r.status_code, _title(body), text[:limit])
+            final = str(r.url)
+            if len(final) > 300 or final.count("%25") > 3:  # redirect loops pile up encoded "back=" params
+                final = url
+            return Page(url, final, r.status_code, _title(body), text[:limit])
         return Page(url, str(r.url), r.status_code, "", "", error=f"unsupported content-type {ctype}")
     except Exception as e:
         log.info("fetch failed %s: %s", url, e)

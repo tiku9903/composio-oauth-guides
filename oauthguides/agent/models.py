@@ -35,7 +35,7 @@ class Fact(BaseModel):
     topic: Literal[
         "registration", "scopes", "review", "verification", "redirect_uri", "tokens",
         "rate_limits", "partner_access", "pricing_or_plan", "timeline", "endpoints",
-        "admin_consent", "branding", "other",
+        "admin_consent", "branding", "lifecycle", "other",
     ]
     statement: str
     support: str = Field(description="Short phrase from the page (<=20 words) supporting the statement")
@@ -56,6 +56,7 @@ class GuideDraft(BaseModel):
 
     category: Optional[str] = None
     tagline: str
+    notice: Optional[str] = Field(default=None, description="Deprecation/shutdown/successor-API warning, with dates, if sources show one")
     supports_oauth: Literal["yes", "no", "unclear"] = "yes"
     tier: DifficultyTier
     tier_reason: str

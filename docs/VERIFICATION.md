@@ -52,3 +52,31 @@ For agent-generated guides, the same discipline is enforced in code (`oauthguide
    - Citations to pages that were never fetched are removed.
 
    These rules are unit-tested in `tests/test_agent.py`.
+
+## 5. A live-generated guide that was wrong, and what changed
+
+**Fitbit (checked live, 2026-10-28).** The agent rated Fitbit "Visa-free": self-serve registration on
+dev.fitbit.com with no review. A spot-check found that wrong in the way that matters most. Per
+[Google's Health API overview](https://developers.google.com/health/about), the Fitbit Web API is being replaced
+by the Google Health API. Legacy support ends 2026-09-30, and the Fitbit API and OAuth endpoints are turned off on
+**2026-11-02**. The successor uses Google OAuth, and *all* of its scopes are restricted, so it needs a privacy and
+security review. A new integration should therefore be rated "Visa required" and built on the successor.
+
+**Why the agent missed it:** none of its searches looked for deprecations, and nothing in the guide format could
+express "this API is going away".
+
+**What changed:**
+- Every investigation now searches for deprecation, sunset, shutdown and migration news.
+- Fact extraction has a `lifecycle` topic.
+- The writer must target the successor API when one exists.
+- Guides have a `notice` field, shown as a red "Before you build" banner above the visa page.
+
+## 6. Other fixes driven by live runs
+
+| Seen in | Problem | Fix |
+|---|---|---|
+| Cal.com | Steps showed "Inferred" although the verifier confirmed S1/S7 (citations written only in prose) | Citation ids are normalised, recovered from verifier notes when they point at pages actually read, and the verifier returns `source_ids` |
+| Cal.com | Console probe called a 404 "reachable"; `/auth/` in the provider's own URL was read as a login redirect | Probe interpretation fixed; regression tests use the exact Cal.com responses |
+| Cal.com / Vercel | Look-alike products (Calendly, Figma) read as sources; provider forums labelled "official" | Relevance filter, and forums on the provider's domain are classified as community |
+| PayPal / Vercel | Main model failed silently; a lite model wrote 3-step guides marked "formal review" with a 1–3 day wait | Model discovery from the key's own model list, a deterministic quality bar with one rewrite, and rate-limit wait-and-retry before falling back |
+| Fitbit | A redirect-loop URL thousands of characters long ended up in a step's links | Runaway URLs are dropped at fetch time and when the guide is assembled |

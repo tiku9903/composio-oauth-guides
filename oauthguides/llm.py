@@ -91,6 +91,11 @@ def candidates(kind: str) -> list[str]:
     return list(dict.fromkeys(chain))[:4]
 
 
+def _is_rate_limit(e: Exception) -> bool:
+    text = f"{type(e).__name__} {e}".lower()
+    return any(k in text for k in ("ratelimit", "rate limit", "429", "resource_exhausted", "resource exhausted", "quota"))
+
+
 def get_llm(name: str, thinking: bool = True) -> Any:
     if _factory is not None:
         return _factory(name)
@@ -130,6 +135,19 @@ async def call_structured(model_cls: type, prompt: str, kind: str = "main", labe
                 log.warning("llm fail %s model=%s after %.1fs: %s", label, name, time.monotonic() - t0, err)
                 if thinking and "thinking" in str(e).lower():
                     continue  # retry the same model without the thinking setting
+                if _is_rate_limit(e) and not getattr(e, "_waited", False) and settings.rate_limit_wait > 0:
+                    if notify:
+                        notify(f"{label}: {name.split(':', 1)[-1]} is rate-limited; waiting {int(settings.rate_limit_wait)}s and retrying")
+                    await asyncio.sleep(settings.rate_limit_wait)
+                    try:
+                        res = await asyncio.wait_for(structured(model_cls, name, False).ainvoke(prompt),
+                                                     timeout=settings.llm_hard_timeout)
+                        if res is not None:
+                            log.info("llm ok %s model=%s after rate-limit wait", label, name)
+                            return res
+                    except Exception as e2:  # noqa: BLE001
+                        last = e2
+                        log.warning("llm fail %s model=%s after rate-limit wait: %s", label, name, str(e2)[:300])
                 break
         if i + 1 < len(chain) and notify:
             short = name.split(":", 1)[-1]

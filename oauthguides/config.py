@@ -36,6 +36,8 @@ class Settings:
     llm_hard_timeout: float = float(os.getenv("LLM_HARD_TIMEOUT", "180"))
     # Gemini "thinking" level: minimal | low | medium | high, or empty to use the model default.
     gemini_thinking: str = os.getenv("GEMINI_THINKING", "low")
+    # Free tiers limit requests per minute: wait this long and retry the same model once before falling back.
+    rate_limit_wait: float = float(os.getenv("RATE_LIMIT_WAIT", "25"))
     user_agent: str = os.getenv(
         "USER_AGENT",
         "Mozilla/5.0 (compatible; OAuthGuideAgent/1.0; +https://github.com/)",

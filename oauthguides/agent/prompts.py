@@ -28,7 +28,8 @@ EXTRACT = """\
 {context}
 
 Below is the text of one web page (source {sid}: {url}, kind={kind}).
-Extract ONLY facts this page actually states that matter for creating, configuring, testing or \
+Extract ONLY facts this page actually states (use topic "lifecycle" for deprecations, shutdown \
+dates, successor APIs or closed programs: these matter most) that matter for creating, configuring, testing or \
 getting approval for an OAuth app for {app}. For each fact give a topic, a self-contained \
 statement in your own words, and a short supporting phrase from the page (max 20 words) so a \
 reviewer can find it. Mark confidence low if the page is old, community-written, about a \
@@ -70,6 +71,10 @@ exact redirect URI {redirect}. 'start_here' is ONE concrete first action. Put ev
 uncertainty into open_questions phrased as a question the developer could ask the provider. \
 ready_to_paste: Composio redirect URI, suggested scopes, a 1-2 sentence app description, and \
 (if review exists) a scope-justification template with placeholders.
+
+API lifecycle comes first: if any fact says the API is deprecated, shutting down, or replaced by a \
+successor, set `notice` with the dates and the successor, and write the guide for the API a new \
+integration should use today (the successor), including its review requirements and tier.
 
 Quality bar (drafts below it are rejected and rewritten):
 - tagline: a VERDICT under 140 chars that names the time and the main gate, e.g. "Credentials in \

@@ -7,6 +7,7 @@
 <div class="wrap" style="--c: var(--t{{ g.tier }})">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Destinations</a><span aria-hidden="true">/</span><span>{{ g.category or 'App' }}</span></nav>
 
+  {% if g.notice %}<div class="alert" role="note"><strong>Before you build:</strong> {{ g.notice|mdi }}</div>{% endif %}
   <article class="visa" aria-labelledby="visa-h">
     <div class="visa-top"><span>OAuth entry requirements</span><span>{% if g.method == 'live_agent' %}Checked live by the agent{% else %}Researched and spot-checked{% endif %} · {{ (g.verification.checked_on or g.generated_at)[:10] }}</span></div>
     <div class="visa-body">
@@ -19,7 +20,7 @@
     <div class="fields">
       <div><div class="k">Entry type</div><div class="v ink{{ g.tier }}">{{ TIER_STAMPS[g.tier] }}</div><div class="d">{{ TIER_PLAIN[g.tier] }}</div></div>
       <div><div class="k">Your hands-on time</div><div class="v">{{ short_effort(g) }}</div>{% if same(short_effort(g), g.time.active_effort) != 'True' %}<div class="d">{{ g.time.active_effort }}</div>{% endif %}</div>
-      <div><div class="k">Waiting on {{ g.app_name }}</div><div class="v">{{ short_wait(g)|capitalize }}</div>{% if same(short_wait(g), g.time.wait) != 'True' %}<div class="d">{{ g.time.wait }}</div>{% endif %}</div>
+      <div><div class="k">Waiting on {{ g.app_name }}</div><div class="v">{{ short_wait(g)|capitalize }}</div>{% if same(short_wait(g), g.time.wait) != 'True' and g.time.wait|lower|trim not in ['none','no','no wait','0','n/a','-'] %}<div class="d">{{ g.time.wait }}</div>{% endif %}</div>
       <div><div class="k">Composio-managed app</div><div class="v">{{ {'yes':'Available','no':'Bring your own','unknown':'Not confirmed'}[g.composio.managed_oauth] }}</div><div class="d">{% if g.composio.managed_oauth == 'yes' %}Launch on Composio's app now; switch to your own for branding.{% else %}Register your own OAuth app with {{ g.app_name }}.{% endif %}</div></div>
     </div>
     <div class="bar-wrap">{{ bar(g, ticks=True, size='lg') }}</div>
@@ -62,7 +63,7 @@
               <div class="detail">{{ s.detail|md }}</div>
               {% if s.agent_help %}<div class="agent-help"><b>Agent can help:</b> {{ s.agent_help|mdi }}</div>{% endif %}
               {% if s.evidence_note %}<div class="ev-note">{{ s.evidence_note }}</div>{% endif %}
-              {% if s.links %}<div class="links">{% for l in s.links %}<a href="{{ l }}" target="_blank" rel="noopener">{{ l|replace('https://','') }}</a>{% endfor %}</div>{% endif %}
+              {% if s.links %}<div class="links">{% for l in s.links if l|length < 300 %}<a href="{{ l }}" target="_blank" rel="noopener">{{ (l|replace('https://',''))|truncate(90, True, '…') }}</a>{% endfor %}</div>{% endif %}
             </div>
           </li>
           {% endfor %}

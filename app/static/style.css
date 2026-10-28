@@ -315,3 +315,5 @@ footer { border-top: 1px solid var(--rule); padding: 22px 0 44px; font-size: 13.
 footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
 @media print { .top, .actions, .copy, footer { display: none !important; } body { background: #fff; } .g-body { grid-template-columns: 1fr; } }
+.alert { margin: 0 0 16px; padding: 14px 18px; border-radius: 10px; border: 1.5px solid var(--t4); background: color-mix(in srgb, var(--t4) 7%, var(--sheet)); font-size: 16px; max-width: 900px; }
+.alert strong { color: var(--t4); }

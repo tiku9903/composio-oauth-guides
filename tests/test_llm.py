@@ -29,6 +29,7 @@ def _patch(monkeypatch, plan, available=None):
     monkeypatch.setattr(llm, "_gemini_checked", True)
     monkeypatch.setattr(llm, "_gemini_models", available)
     object.__setattr__(config.settings, "llm_hard_timeout", 0.2)
+    object.__setattr__(config.settings, "rate_limit_wait", 0)
     object.__setattr__(config.settings, "model", "google_genai:main-model")
     object.__setattr__(config.settings, "fast_model", "google_genai:fast-model")
     return calls
@@ -78,3 +79,15 @@ def test_raises_after_all_fallbacks(monkeypatch):
         assert "quota" in str(e)
     else:
         raise AssertionError("expected failure")
+
+
+def test_rate_limit_waits_and_retries_same_model_before_falling_back(monkeypatch):
+    async def limited():
+        raise RuntimeError("429 RESOURCE_EXHAUSTED: rate limit")
+
+    calls = _patch(monkeypatch, [limited, _ok])
+    object.__setattr__(config.settings, "rate_limit_wait", 0.01)
+    notes = []
+    res = asyncio.run(llm.call_structured(Out, "p", "main", "synthesize", notes.append))
+    assert res.ok and calls == [("main-model", True), ("main-model", False)]  # same model, not the lite one
+    assert "rate-limited" in notes[0]
