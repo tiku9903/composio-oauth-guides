@@ -1,5 +1,5 @@
-# One-click deploy on Render: New > Blueprint > point at this repo.
-# Set the secret env vars in the Render dashboard (they are `sync: false`, never stored in git).
+# One-click deploy on Render (free plan): New > Blueprint > pick this repo.
+# Secrets are `sync: false`: Render asks for them in the dashboard and they are never stored in git.
 services:
   - type: web
     name: oauth-app-readiness
@@ -8,12 +8,14 @@ services:
     healthCheckPath: /healthz
     envVars:
       - key: MODEL
-        value: anthropic:claude-sonnet-5-5
+        value: google_genai:gemini-3.8-flash
       - key: FAST_MODEL
-        value: anthropic:claude-haiku-5-5
-      - key: ANTHROPIC_API_KEY
+        value: google_genai:gemini-3.5-flash-lite
+      - key: EXTRACT_CONCURRENCY
+        value: "2"
+      - key: GEMINI_API_KEY        # free: https://aistudio.google.com/apikey
         sync: false
-      - key: TAVILY_API_KEY
+      - key: TAVILY_API_KEY        # free: https://app.tavily.com
         sync: false
-      - key: COMPOSIO_API_KEY
+      - key: COMPOSIO_API_KEY      # optional
         sync: false

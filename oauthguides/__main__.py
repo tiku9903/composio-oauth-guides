@@ -12,7 +12,7 @@ def main() -> None:
         print('usage: python -m oauthguides "<app name or website>"')
         raise SystemExit(2)
     if not settings.llm_configured:
-        print(f"No API key for {settings.model}. Set ANTHROPIC_API_KEY (or MODEL + that provider's key).")
+        print(f"No API key for {settings.model}. Set GEMINI_API_KEY (free at aistudio.google.com) or MODEL + that provider's key.")
         raise SystemExit(1)
     from .agent.graph import run
 

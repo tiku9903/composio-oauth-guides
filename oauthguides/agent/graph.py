@@ -185,7 +185,7 @@ async def extract(state: AgentState) -> dict:
     ident = AppIdentity(**state["identity"])
     pages = state.get("pages", [])
     runner = structured(PageExtraction, "fast")
-    sem = asyncio.Semaphore(5)
+    sem = asyncio.Semaphore(max(1, settings.extract_concurrency))
 
     async def one(p: dict) -> tuple[str, dict]:
         async with sem:

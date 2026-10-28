@@ -70,30 +70,53 @@ flowchart LR
 - Code: `oauthguides/agent/graph.py` (graph and guards), `prompts.py`, `tools/probes.py`, `tools/search.py`, `tools/fetch.py`.
 - The UI streams LangGraph's custom events over Server-Sent Events (`app/jobs.py`). A late or reconnecting browser
   replays the whole log.
-- Identifying the app and extracting facts use `FAST_MODEL`. Writing and verifying use `MODEL`.
+- Identifying the app and extracting facts use `FAST_MODEL`. Writing and verifying use `MODEL`. The default is Gemini on its free tier, and any LangChain provider works.
 
-## Setup
+## Setup (free: $0)
+
+Everything runs on free tiers: Gemini for the model, Tavily for search and Render for hosting. No card is needed.
+
+| Key | Where to get it | Needed? |
+|---|---|---|
+| `GEMINI_API_KEY` | [Google AI Studio → Get API key](https://aistudio.google.com/apikey) | For live investigation |
+| `TAVILY_API_KEY` | [app.tavily.com](https://app.tavily.com) (free tier) | Strongly recommended |
+| `COMPOSIO_API_KEY` | Composio dashboard | Optional |
+
+**Keys never go in the repo.** Locally they go in `.env`, which is git-ignored. On Render they go in the dashboard's
+Environment settings.
 
 ```bash
-git clone <this repo> && cd oauth-guides
-python -m venv .venv && source .venv/bin/activate
+git clone https://github.com/tiku9903/composio-oauth-guides && cd composio-oauth-guides
+python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env            # add ANTHROPIC_API_KEY (and ideally TAVILY_API_KEY)
+cp .env.example .env            # paste your keys after the = signs
 uvicorn app.main:app --reload   # http://localhost:8000
 ```
 
-The library works with no keys. Live investigation needs a model key. Search falls back to DuckDuckGo without
-Tavily, but that is rate-limited from cloud servers.
+The library works with no keys at all. To use Claude or OpenAI instead of Gemini, set `MODEL`, `FAST_MODEL` and that
+provider's key (see `.env.example`).
 
 ```bash
 python -m oauthguides "Zendesk"                     # investigate one app in the terminal
 python scripts/build_library.py --limit 10          # grow the library from data/catalog.json
 python scripts/reprobe.py                           # re-run live probes for the curated guides
-pytest                                              # 13 tests, no network or keys needed
+pytest                                              # tests, no network or keys needed
 ```
 
-**Deploy:** `render.yaml` is a Render Blueprint (Docker, free plan). Add `ANTHROPIC_API_KEY`, `TAVILY_API_KEY` and,
-optionally, `COMPOSIO_API_KEY` as secrets in the dashboard. Any Docker host works: `docker build -t oauth-guides . && docker run -p 8000:8000 --env-file .env oauth-guides`.
+### Deploy for a shareable link (Render, free plan)
+
+1. Sign in at [render.com](https://render.com) with GitHub.
+2. **New → Blueprint** → pick this repo. It reads `render.yaml`.
+3. Paste `GEMINI_API_KEY` and `TAVILY_API_KEY` when asked, leave `COMPOSIO_API_KEY` blank if you don't have one, and click **Apply**.
+4. After the build (a few minutes) you get `https://<name>.onrender.com`. Check `/healthz` shows `"llm_configured": true`.
+
+The free plan sleeps after a period without visits, and the first request then takes up to a minute while it wakes.
+Live-generated guides are lost when it restarts; curated guides ship with the repo. Any Docker host also works:
+`docker build -t oauth-guides . && docker run -p 8000:8000 --env-file .env oauth-guides`.
+
+**Free-tier notes:** Gemini's free tier has per-minute request limits. The agent runs at most two page extractions
+at a time and retries on rate-limit errors, so an investigation may take a little longer. Google may use free-tier
+prompts to improve its products; the agent only sends public documentation text and the app name.
 
 ## Limitations
 

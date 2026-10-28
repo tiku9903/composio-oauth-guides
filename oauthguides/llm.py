@@ -1,6 +1,6 @@
 """Model access. Provider-agnostic through LangChain's init_chat_model.
 
-MODEL=anthropic:claude-sonnet-5-5 (default) or e.g. openai:gpt-5, google_genai:gemini-2.5-pro.
+MODEL=google_genai:gemini-3.8-flash (default, free tier) or e.g. anthropic:claude-sonnet-5-5, openai:gpt-5.
 Tests inject a fake via set_llm_factory().
 """
 from __future__ import annotations
@@ -24,7 +24,7 @@ def get_llm(kind: str = "main") -> Any:
         return _factory(name)
     from langchain.chat_models import init_chat_model
 
-    return init_chat_model(name, temperature=0, max_tokens=16000, timeout=180, max_retries=2)
+    return init_chat_model(name, temperature=0, max_tokens=16000, timeout=180, max_retries=6)
 
 
 def structured(model_cls: type, kind: str = "main") -> Any:

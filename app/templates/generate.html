@@ -7,7 +7,7 @@
       <h1 id="title">{% if q %}Investigating {{ q }}{% else %}Investigate any app{% endif %}</h1>
       <p class="lede muted" style="font-size:18px;max-width:60ch;margin-top:12px">An agent finds the provider's developer docs, reads them, tries the live OAuth endpoints, writes a guide, then has a separate verifier check every claim against its sources.</p>
       {% if not llm_ready %}
-      <div class="notice warn" style="margin-top:18px"><strong>Live investigation is off on this server.</strong> Set <code>ANTHROPIC_API_KEY</code> (or another provider key and <code>MODEL</code>) and restart. The library still works without it.</div>
+      <div class="notice warn" style="margin-top:18px"><strong>Live investigation is off on this server.</strong> Set <code>GEMINI_API_KEY</code> (free from Google AI Studio), or another provider's key plus <code>MODEL</code>, and restart. The library still works without it.</div>
       {% endif %}
       <form class="lookup" id="form" {% if q %}hidden{% endif %}>
         <label for="q" style="position:absolute;left:-9999px">App name or website</label>

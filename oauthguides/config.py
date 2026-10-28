@@ -18,8 +18,9 @@ DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "data"))
 
 @dataclass(frozen=True)
 class Settings:
-    model: str = os.getenv("MODEL", "anthropic:claude-sonnet-5-5")
-    fast_model: str = os.getenv("FAST_MODEL", os.getenv("MODEL", "anthropic:claude-haiku-5-5"))
+    # Default: Google Gemini on its free tier. Any LangChain "provider:model" works, e.g. anthropic:claude-sonnet-5-5.
+    model: str = os.getenv("MODEL", "google_genai:gemini-3.8-flash")
+    fast_model: str = os.getenv("FAST_MODEL", "google_genai:gemini-3.5-flash-lite")
     tavily_key: str | None = os.getenv("TAVILY_API_KEY") or None
     composio_key: str | None = os.getenv("COMPOSIO_API_KEY") or None
     max_search_results: int = int(os.getenv("MAX_SEARCH_RESULTS", "6"))
@@ -27,6 +28,8 @@ class Settings:
     page_char_limit: int = int(os.getenv("PAGE_CHAR_LIMIT", "14000"))
     http_timeout: float = float(os.getenv("HTTP_TIMEOUT", "15"))
     cache_days: int = int(os.getenv("GUIDE_CACHE_DAYS", "7"))
+    # Parallel page-extraction calls. Keep low on free model tiers (requests-per-minute limits).
+    extract_concurrency: int = int(os.getenv("EXTRACT_CONCURRENCY", "2"))
     user_agent: str = os.getenv(
         "USER_AGENT",
         "Mozilla/5.0 (compatible; OAuthGuideAgent/1.0; +https://github.com/)",
@@ -38,12 +41,12 @@ class Settings:
     @property
     def llm_configured(self) -> bool:
         provider = self.model.split(":", 1)[0]
-        env = {
-            "anthropic": "ANTHROPIC_API_KEY",
-            "openai": "OPENAI_API_KEY",
-            "google_genai": "GOOGLE_API_KEY",
+        envs = {
+            "anthropic": ["ANTHROPIC_API_KEY"],
+            "openai": ["OPENAI_API_KEY"],
+            "google_genai": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
         }.get(provider)
-        return bool(env is None or os.getenv(env))
+        return envs is None or any(os.getenv(e) for e in envs)
 
 
 settings = Settings()

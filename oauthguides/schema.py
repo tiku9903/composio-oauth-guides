@@ -7,7 +7,7 @@ evidence level and points at sources, so the UI can show *how we know* next to
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -19,7 +19,7 @@ inferred  - reasoned from sources or from how similar providers behave; not stat
 uncertain - conflicting, outdated, anecdotal, or not found. Treat as a question to ask the provider.
 """
 
-DifficultyTier = Literal[1, 2, 3, 4]
+DifficultyTier = Annotated[int, Field(ge=1, le=4)]  # int (not Literal) so every model provider accepts the schema
 TIER_LABELS = {
     1: "Self-serve",
     2: "Self-serve + light review",
