@@ -3,35 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}OAuth App Readiness{% endblock %}</title>
-<meta name="description" content="{% block desc %}How long it takes to get a provider OAuth app ready for your AI agent, what blocks approval, and what an agent can do for you.{% endblock %}">
+<title>{% block title %}Visa Desk · OAuth entry requirements for AI agents{% endblock %}</title>
+<meta name="description" content="{% block desc %}Your agent needs a visa for every app it enters. That visa is an OAuth app. See how long each provider takes to approve one, what blocks it, and what an agent can do for you.{% endblock %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16'><rect width='12' height='16' rx='2' fill='%2323764F'/><rect x='15' width='17' height='16' rx='2' fill='%23B57A0B'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='5' width='26' height='22' rx='4' fill='none' stroke='%2313213C' stroke-width='3'/><path d='M9 16h14M9 21h9' stroke='%2313213C' stroke-width='3'/></svg>">
 {% block head %}{% endblock %}
 </head>
 <body>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>OAuth App Readiness</a>
+    <a class="brand" href="/" aria-label="Visa Desk home">
+      <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><rect x="1.5" y="1.5" width="23" height="19" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M6 9h14M6 14h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      Visa Desk <small>OAuth entry requirements for AI agents</small>
+    </a>
     <nav aria-label="Main">
-      <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Library</a>
-      <a href="/generate" {% if request.url.path == '/generate' %}aria-current="page"{% endif %}>Investigate an app</a>
-      <a href="/method" {% if request.url.path == '/method' %}aria-current="page"{% endif %}>How it works</a>
+      <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Destinations</a>
+      <a href="/generate" {% if request.url.path == '/generate' %}aria-current="page"{% endif %}>Check a new app</a>
+      <a href="/method" {% if request.url.path == '/method' %}aria-current="page"{% endif %}>How we check</a>
     </nav>
   </div>
 </header>
 <main>{% block main %}{% endblock %}</main>
-<footer><div class="wrap">Guides describe what we found on the date shown; providers change their rules. Each claim says how we know it. Credentials never pass through this site.</div></footer>
+<footer><div class="wrap"><span>Rules change. Every guide shows when it was checked and how we know each claim.</span><span>Read-only checks. Your credentials never pass through Visa Desk.</span></div></footer>
 {% block scripts %}{% endblock %}
 <script>
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("[data-copy]");
   if (!b) return;
-  const text = b.dataset.copy || document.querySelector(b.dataset.copyFrom)?.innerText || "";
-  try { await navigator.clipboard.writeText(text); const old = b.textContent; b.textContent = "Copied"; setTimeout(() => b.textContent = old, 1400); } catch {}
+  try { await navigator.clipboard.writeText(b.dataset.copy); const t = b.textContent; b.textContent = "Copied"; setTimeout(() => b.textContent = t, 1400); } catch {}
 });
 </script>
 </body>

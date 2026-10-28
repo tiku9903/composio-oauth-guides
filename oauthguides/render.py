@@ -5,6 +5,31 @@ import math
 
 from .schema import Guide
 
+# Visa metaphor used in the UI: an OAuth app is your agent's visa into a provider's platform.
+TIER_STAMPS = {1: "Visa-free", 2: "Visa on arrival", 3: "Visa required", 4: "Restricted entry"}
+TIER_PLAIN = {
+    1: "No review. Create the app and ship.",
+    2: "Instant credentials; light review or listing to go wide.",
+    3: "Formal review or verification before real users.",
+    4: "Partner program or contract; approval not guaranteed.",
+}
+
+
+def mrz(g: Guide) -> list[str]:
+    """Two passport-style machine-readable lines summarising the guide (decorative but truthful)."""
+    def clean(x: str) -> str:
+        import re as _re
+        return _re.sub(r"[^A-Z0-9]+", "<", x.upper()).strip("<")
+
+    stamp = clean(TIER_STAMPS[g.tier])
+    line1 = f"VD<{clean(g.app_name)}<<{stamp}"
+    eff = clean(short_effort(g).replace("–", "-").replace(" ", ""))
+    wait = "NOWAIT" if not g.time.wait_days_high else "WAIT<" + clean(short_wait(g).replace("up to", ""))
+    line2 = f"T{g.tier}<<{eff}<<{wait}<<SRC{len(g.sources)}<<PRB{len(g.probes)}<<{(g.verification.checked_on or g.generated_at[:10]).replace('-', '')}"
+    width = 50
+    return [line1[:width].ljust(width, "<"), line2[:width].ljust(width, "<")]
+
+
 PHASE_LABELS = {
     "prepare": "Prepare", "register": "Register the app", "configure": "Configure",
     "test": "Test", "review": "Review & approval", "launch": "Launch",

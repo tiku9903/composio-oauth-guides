@@ -1,13 +1,23 @@
-# OAuth App Readiness
+# Visa Desk: OAuth entry requirements for AI agents
 
-**Will your OAuth app take an hour or six weeks?** Look up any app your AI agent's users need to connect, and get a
-shareable guide to getting your own OAuth app created and approved. It covers difficulty, hands-on effort versus the
-wait for approval, what blocks people, what an agent can do for you, and how sure we are about each claim.
+**Your agent needs a visa for every app it enters. That visa is an OAuth app.** GitHub stamps it in fifteen
+minutes. Gmail can keep you waiting weeks for review and a security audit. Visa Desk tells you which one you're
+dealing with before you build, and gives you a shareable guide to get through it.
 
-- **Library:** 8 researched and spot-checked guides that span the difficulty range, plus the 100-app target catalog.
-- **Live investigation:** type any app name or website. A LangGraph agent researches it, probes the provider's real
-  OAuth endpoints, writes the guide, has a separate verifier check every claim, and streams its progress to the page.
-- **Shareable output:** every guide has a permalink, a Markdown export (for a ticket or doc) and JSON.
+- **Destinations:** 8 researched and spot-checked guides across the difficulty range, plus the 100-app target catalog.
+- **Live check:** type any app name or website. A LangGraph agent reads the provider's docs, pings its real OAuth
+  endpoints, writes the guide, checks it against a quality bar, has a separate verifier check every claim, and streams
+  all of it to the page.
+- **Shareable:** every guide has a permalink, Markdown export (for a ticket or doc) and JSON.
+
+### Why "visa"
+
+Difficulty tiers mean nothing until someone learns them. Visas are a model every developer already has, so the four
+tiers are entry types: **Visa-free** (no review), **Visa on arrival** (instant credentials, light review to go wide),
+**Visa required** (formal review or verification), and **Restricted entry** (partner program, approval not
+guaranteed). Each guide's header is a visa page: entry type stamp, your hands-on time, the provider's processing time
+on one log-scale bar, Composio-managed status, and a passport-style machine-readable line that summarises it. The
+metaphor stops there; the rest is a plain developer tool.
 
 ## The problem, as I understood it
 
@@ -28,12 +38,12 @@ rest. So the product leads with the verdict and the timeline, and treats the ste
 
 | Decision | Why |
 |---|---|
-| **Four difficulty tiers** (self-serve → light review → formal review → partner-gated) | A developer's first decision is whether to commit to this provider this sprint. The tier is judged for the scopes an AI agent realistically needs, not the easiest path, so Gmail is "formal review" even though test credentials take five minutes. |
+| **Four entry types** (visa-free → visa on arrival → visa required → restricted entry) | A developer's first decision is whether to commit to this provider this sprint. The tier is judged for the scopes an AI agent realistically needs, not the easiest path, so Gmail is "formal review" even though test credentials take five minutes. |
 | **Effort and wait are separate numbers on one log-scale bar** | "30 minutes of work, then up to 9 weeks of waiting" is the single most useful fact, and it is invisible when merged into one estimate. The log scale lets minutes and months share a ruler. |
 | **Every step, requirement and blocker carries an evidence level** (tested, sourced, inferred, uncertain) **and citations** | Provider rules change and review times are mostly anecdotal. A guide that is confidently wrong is worse than none. The levels are enforced in code, not left to the model (see below). |
 | **Every step says who does it** (agent, you, you with agent prep) | The brief asks where an agent stops. Console logins, accepting terms, DNS verification, paying for an assessment and recording a demo video are human steps. Everything around them (field values, scope lists, justification text, test flows) is prepared for you. |
 | **Live probes, not just reading** | The agent calls the provider's real authorize endpoint with a fake `client_id` and Composio's redirect URI, fetches OIDC discovery metadata, checks whether the console sits behind a login wall, and checks Composio's toolkit page. These are read-only and need no credentials, and they are the only things allowed to be labelled "tested". |
-| **A separate verifier pass plus deterministic guards** | The writer and the checker are different calls. After the checker, code drops citations to pages that were never fetched, downgrades "tested" without a probe, downgrades "sourced" without a citation, and marks community-only claims "uncertain". |
+| **A quality bar, a separate verifier pass, and deterministic guards** | Drafts below a deterministic quality bar (too few steps, no review step for a visa-required app, wait times that contradict the entry type) are rewritten. The writer and the checker are different calls. After the checker, code drops citations to pages that were never fetched, downgrades "tested" without a probe, downgrades "sourced" without a citation, and marks community-only claims "uncertain". |
 | **Guides are JSON files in git; live results cache for 7 days** | Curated guides are reviewable and diff-able. Generated guides are reused rather than regenerated on every visit, and "Re-investigate now" forces a refresh. |
 | **Scope: guidance, not automation of the console** | Creating apps inside providers' consoles would need the developer's logins and would cross into actions the developer should take themselves. The value is knowing the path before starting. |
 

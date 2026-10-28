@@ -36,7 +36,7 @@ def test_catalog_has_100_unique_apps():
 
 def test_library_and_guide_pages_render():
     r = client.get("/")
-    assert r.status_code == 200 and "Ready guides" in r.text
+    assert r.status_code == 200 and "Checked destinations" in r.text
     for g in curated():
         r = client.get(f"/guides/{g.slug}")
         assert r.status_code == 200, g.slug
@@ -48,8 +48,8 @@ def test_tier_filter():
     assert r.status_code == 200
     names_t3 = {g.app_name for g in curated() if g.tier == 3}
     others = {g.app_name for g in curated() if g.tier != 3}
-    assert all(f'<div class="name">{n}</div>' in r.text for n in names_t3)
-    assert not any(f'<div class="name">{n}</div>' in r.text for n in others)
+    assert all(f'<span class="name">{n}</span>' in r.text for n in names_t3)
+    assert not any(f'<span class="name">{n}</span>' in r.text for n in others)
 
 
 def test_markdown_and_json_exports():

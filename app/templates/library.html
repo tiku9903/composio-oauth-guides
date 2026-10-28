@@ -1,52 +1,63 @@
 {% extends "base.html" %}
-{% from "_macros.html" import tier_pill, path %}
+{% from "_macros.html" import stamp, bar %}
 {% block main %}
 <div class="wrap">
   <section class="hero">
-    <h1>Will your OAuth app take an hour or six weeks?</h1>
-    <p class="lede">Look up the app your agent's users need to connect. You get the path to a working, approved OAuth app: effort, approval wait, what blocks people, and which steps an agent can take off your hands.</p>
-    <form class="lookup" action="/lookup" method="get" role="search">
-      <label for="q" class="sr-only" style="position:absolute;left:-9999px">App name or website</label>
-      <input id="q" name="q" placeholder="App name or website, e.g. Zendesk or calendly.com" autocomplete="off" list="known" required>
-      <datalist id="known">{% for g in guides %}<option value="{{ g.app_name }}">{% endfor %}{% for c in pending %}<option value="{{ c.name }}">{% endfor %}</datalist>
-      <button class="btn" type="submit">Get the guide</button>
-    </form>
-    <p class="hint">Apps not in the library are investigated live by an agent, usually in 1–3 minutes.{% if not llm_ready %} <strong>Live investigation is off on this server:</strong> no model API key is set.{% endif %}</p>
+    <div>
+      <h1>Your agent needs a visa for every app it enters.</h1>
+      <p class="lede">That visa is an OAuth app. GitHub stamps it in fifteen minutes. Gmail can keep you waiting for weeks of review and a security audit. Look up the app before you build on it.</p>
+      <form action="/lookup" method="get" role="search">
+        <div class="field">
+          <label for="q">Destination app</label>
+          <input id="q" name="q" placeholder="Zendesk, calendly.com, anything" autocomplete="off" list="known" required>
+          <button class="btn" type="submit">Check entry</button>
+        </div>
+        <datalist id="known">{% for g in guides %}<option value="{{ g.app_name }}">{% endfor %}{% for c in pending %}<option value="{{ c.name }}">{% endfor %}</datalist>
+      </form>
+      <p class="hint">Apps we haven't checked yet are investigated live: an agent reads the provider's docs, pings their real OAuth endpoints and writes the guide in a few minutes.{% if not llm_ready %} <strong>Live checks are off on this server until a model key is set.</strong>{% endif %}</p>
+    </div>
+
+    <aside class="desk" aria-labelledby="desk-h">
+      <h2 id="desk-h">Four kinds of entry</h2>
+      <p>Pick one to filter the list.</p>
+      <div class="desk-grid">
+        {% for t in range(1,5) %}
+        <a href="{{ '/' if tier == t else '/?tier=' ~ t }}#list" {% if tier == t %}aria-current="true"{% endif %}>
+          {{ stamp(t) }}
+          <span class="what">{{ TIER_PLAIN[t] }}</span>
+          <span class="n">{{ tier_counts[t] }} {{ 'app' if tier_counts[t] == 1 else 'apps' }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </aside>
   </section>
 
-  <section class="section" aria-labelledby="lib-h">
-    <div class="section-head">
-      <h2 id="lib-h">Ready guides <span class="muted small">{{ all_count }}</span></h2>
-      <nav class="filters" aria-label="Filter by difficulty">
-        <a href="/" {% if tier is none %}aria-current="true"{% endif %}>All</a>
-        {% for t in range(1,5) %}<a href="/?tier={{ t }}" {% if tier == t %}aria-current="true"{% endif %}>{{ TIER_LABELS[t] }}</a>{% endfor %}
-      </nav>
+  <section id="list" aria-labelledby="list-h">
+    <div class="list-head">
+      <h2 id="list-h">{% if tier %}{{ TIER_STAMPS[tier] }}{% else %}Checked destinations{% endif %} <span class="muted" style="font-weight:400">{{ guides|length }}</span></h2>
+      {% if tier %}<a class="clear" href="/#list">Show all {{ all_count }}</a>{% endif %}
     </div>
-    <div class="lib-head" aria-hidden="true"><span>App</span><span>Verdict</span><span>Hands-on, then waiting</span><span style="text-align:right">How we know</span></div>
-    <div class="lib">
+    <div class="entries">
       {% for g in guides %}
-      <a class="lib-row" href="/guides/{{ g.slug }}">
-        <div><div class="name">{{ g.app_name }}</div>{{ tier_pill(g.tier) }}</div>
-        <div class="tag">{{ g.tagline }}</div>
-        <div>{{ path(g) }}<div class="times"><span>{{ short_effort(g) }} hands-on</span><span>{{ short_wait(g) }}</span></div></div>
-        <div class="prov">{% if g.verification.status == 'spot_checked' %}Spot-checked against sources{% elif g.method == 'curated' %}Curated{% else %}Agent-generated{% endif %}<br><span class="muted">{{ g.sources|length }} sources · {{ g.probes|length }} probes</span></div>
+      <a class="entry" href="/guides/{{ g.slug }}">
+        <div class="ent"><span class="name">{{ g.app_name }}</span>{{ stamp(g.tier) }}</div>
+        <div>
+          <div class="tag">{{ g.tagline }}</div>
+          <div class="meta">{% if g.verification.status == 'spot_checked' %}Spot-checked against sources{% elif g.method == 'curated' %}Curated{% else %}Checked live by the agent{% endif %} · {{ (g.verification.checked_on or g.generated_at)[:10] }} · {{ g.sources|length }} sources</div>
+        </div>
+        <div>{{ bar(g) }}<div class="when"><span>{{ short_effort(g) }} of your time</span><span>{{ short_wait(g) }}</span></div></div>
       </a>
       {% else %}
-      <p class="muted" style="padding:18px 0">No guides match that filter.</p>
+      <p class="muted" style="padding:20px 0">No checked apps with this entry type yet. Check one above.</p>
       {% endfor %}
     </div>
-    <div class="path-key tier tier-2" style="margin-top:14px"><span><i></i>Your hands-on work</span><span><i class="w"></i>Waiting on the provider (range)</span><span>Log scale, 10 minutes to 4 months.</span></div>
+    <div class="legend"><span><i></i>Your hands-on work</span><span><i class="w"></i>Waiting on the provider</span><span>Log scale, 10 minutes to 4 months</span></div>
   </section>
 
   {% if pending %}
   <section class="section" aria-labelledby="todo-h">
-    <div class="section-head">
-      <h2 id="todo-h">Not investigated yet <span class="muted small">{{ pending|length }} of {{ catalog_total }}</span></h2>
-      <span class="muted small">Pick one to have the agent investigate it now.</span>
-    </div>
-    <div class="chips">
-      {% for c in pending %}<a href="/generate?q={{ c.name|urlencode }}">{{ c.name }}<small>{{ c.category }}</small></a>{% endfor %}
-    </div>
+    <div class="list-head"><h2 id="todo-h">Not checked yet <span class="muted" style="font-weight:400">{{ pending|length }} of {{ catalog_total }}</span></h2><span class="muted small">Pick one to check it live.</span></div>
+    <div class="chips">{% for c in pending %}<a href="/generate?q={{ c.name|urlencode }}">{{ c.name }}<small>{{ c.category }}</small></a>{% endfor %}</div>
   </section>
   {% endif %}
 </div>

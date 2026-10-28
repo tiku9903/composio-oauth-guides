@@ -54,10 +54,19 @@ def _md(text: str) -> Markup:
 
 
 templates.env.filters["md"] = _md
+
+
+def _mdi(text: str) -> Markup:
+    """Inline markdown (code, bold, links) without wrapping paragraphs."""
+    html = md.markdown(text or "")
+    return Markup(re.sub(r"^<p>|</p>$", "", html.strip()))
+
+
+templates.env.filters["mdi"] = _mdi
 templates.env.globals.update(
     TIER_LABELS=TIER_LABELS, TIER_BLURBS=TIER_BLURBS, EVIDENCE_LABELS=render.EVIDENCE_LABELS,
     EVIDENCE_HELP=render.EVIDENCE_HELP, OWNER_LABELS=render.OWNER_LABELS, PHASE_LABELS=render.PHASE_LABELS,
-    path_bar=render.path_bar, short_effort=render.short_effort, short_wait=render.short_wait, REDIRECT_URI=COMPOSIO_REDIRECT_URI,
+    path_bar=render.path_bar, short_effort=render.short_effort, short_wait=render.short_wait, TIER_STAMPS=render.TIER_STAMPS, TIER_PLAIN=render.TIER_PLAIN, mrz=render.mrz, REDIRECT_URI=COMPOSIO_REDIRECT_URI,
 )
 
 
@@ -77,8 +86,9 @@ async def library(request: Request, tier: int | None = None):
     have = {g.slug for g in guides}
     shown = [g for g in guides if tier is None or g.tier == tier]
     pending = [c for c in _catalog() if c["slug"] not in have and not store.find(c["name"])]
+    tier_counts = {t: sum(1 for g in guides if g.tier == t) for t in range(1, 5)}
     return templates.TemplateResponse(request, "library.html", {
-        "guides": shown, "all_count": len(guides), "tier": tier, "pending": pending,
+        "guides": shown, "all_count": len(guides), "tier": tier, "pending": pending, "tier_counts": tier_counts,
         "catalog_total": len(_catalog()), "llm_ready": settings.llm_configured,
     })
 
