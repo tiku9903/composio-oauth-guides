@@ -252,39 +252,37 @@ async def probe_composio(toolkit_slug: str) -> Probe:
         api_note = f" (API check failed: {observed})"
     else:
         api_note = ""
-    url = f"https://docs.composio.dev/toolkits/{slug.replace('_', '-')}"
+    base = f"https://docs.composio.dev/toolkits/{slug.replace('_', '-')}"
+    text, url, status = "", base, 0
     try:
         async with client() as c:
-            r = await c.get(url)
-        text = html_to_text(r.text) if r.status_code == 200 else ""
-        low = text.lower()
-        if r.status_code != 200 or not text:
-            verdict, ok = "Toolkit page not found under that slug; Composio may not support this app yet.", False
-        elif "composio managed" in low or "composio-managed" in low or "managed by composio" in low:
-            verdict, ok = "Docs page mentions Composio-managed auth — check which auth method it applies to.", True
-        elif "oauth" in low:
-            verdict, ok = "Toolkit exists and mentions OAuth; managed status not stated on the page.", None
-        else:
-            verdict, ok = "Toolkit page exists but doesn't mention OAuth.", None
-        return Probe(
-            name="Composio toolkit docs",
-            target=url,
-            method="GET public toolkit docs page" + api_note,
-            observed=f"HTTP {r.status_code}" + (f"; {len(text)} chars of text" if text else ""),
-            conclusion=verdict,
-            ok=ok,
-            at=_now(),
-        )
+            # The docs site renders client-side; its .md variant carries the real content.
+            for candidate in (base + ".md", base):
+                r = await c.get(candidate)
+                status, url = r.status_code, candidate
+                if r.status_code == 200:
+                    body = r.text if candidate.endswith(".md") else html_to_text(r.text)
+                    if len(body) >= 400:
+                        text = body
+                        break
     except Exception as e:
-        return Probe(
-            name="Composio toolkit docs",
-            target=url,
-            method="GET public toolkit docs page",
-            observed=f"Request failed: {type(e).__name__}",
-            conclusion="Could not check Composio docs.",
-            ok=None,
-            at=_now(),
-        )
+        return Probe(name="Composio toolkit docs", target=base, method="GET public toolkit docs page" + api_note,
+                     observed=f"Request failed: {type(e).__name__}", conclusion="Could not check Composio docs.",
+                     ok=None, at=_now())
+    low = text.lower()
+    if not text and status in (404, 410):
+        verdict, ok = "No toolkit page under this name; Composio may not support this app yet (or uses another slug).", False
+    elif not text:
+        verdict, ok = "Page had no readable content (client-rendered); managed status unknown.", None
+    elif re.search(r"composio[- ]managed|managed by composio|managed (oauth|auth)", low):
+        verdict, ok = "Toolkit docs mention Composio-managed auth; check which auth method it covers.", True
+    elif "oauth" in low:
+        verdict, ok = "Toolkit exists and supports OAuth; docs don't say Composio manages the app, so plan to bring your own.", None
+    else:
+        verdict, ok = "Toolkit exists; its docs don't mention OAuth.", None
+    return Probe(name="Composio toolkit docs", target=url, method="GET public toolkit docs (markdown first)" + api_note,
+                 observed=f"HTTP {status}" + (f"; {len(text)} chars of content" if text else "; no readable content"),
+                 conclusion=verdict, ok=ok, at=_now())
 
 
 async def run_probes(domains: list[str], authorize_url: str | None, console_url: str | None,

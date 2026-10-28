@@ -68,8 +68,18 @@ if none). In step detail use exact menu paths/field names when the sources give 
 exact redirect URI {redirect}. 'start_here' is ONE concrete first action. Put every open \
 uncertainty into open_questions phrased as a question the developer could ask the provider. \
 ready_to_paste: Composio redirect URI, suggested scopes, a 1-2 sentence app description, and \
-(if review exists) a scope-justification template with placeholders. Keep the tagline under \
-140 characters.
+(if review exists) a scope-justification template with placeholders.
+
+Quality bar (drafts below it are rejected and rewritten):
+- tagline: a VERDICT under 140 chars that names the time and the main gate, e.g. "Credentials in \
+minutes; reading mail needs restricted-scope review plus a yearly security assessment". Never a \
+description of the product.
+- 6-10 steps covering prepare, register, configure, test and launch. If tier is 3 or 4 there MUST be \
+a review-phase step that says what reviewers ask for and how long they take.
+- tier, time.wait and steps must agree: tier 1 means no approval wait; tier 3+ means weeks, not days.
+- at least 3 requirements and 2 blockers (real failure modes with the exact error a developer sees).
+- suggested scopes: the scopes an AI agent would need for useful actions in this app (e.g. read and \
+write the app's core objects), not only sign-in scopes; mark which ones trigger review.
 
 APP: {identity}
 

@@ -291,9 +291,39 @@ async def synthesize(state: AgentState) -> dict:
         probes=_fmt_probes(probes), sources=_fmt_sources(pages), facts=_fmt_facts(pages, exs))
     async with heartbeat("Still writing the guide", "synthesize"):
         draft: GuideDraft = await call_structured(GuideDraft, prompt, "main", "synthesize", _warn("synthesize"))
+    problems = draft_problems(draft)
+    if problems:
+        emit("adjust", "Draft below the quality bar (" + "; ".join(problems) + "); rewriting", stage="synthesize")
+        retry = prompt + "\n\nYOUR PREVIOUS DRAFT WAS REJECTED: " + "; ".join(problems) + \
+            ". Rewrite the complete guide meeting the quality bar, using only the evidence above."
+        try:
+            async with heartbeat("Rewriting the guide", "synthesize"):
+                second: GuideDraft = await call_structured(GuideDraft, retry, "main", "synthesize-retry", _warn("synthesize"))
+            if len(draft_problems(second)) <= len(problems):
+                draft = second
+        except Exception as e:  # keep the first draft rather than fail the run
+            emit("warn", f"Rewrite failed ({type(e).__name__}); keeping the first draft", stage="synthesize")
     emit("draft", f"Draft: tier {draft.tier}, {len(draft.steps)} steps, {len(draft.requirements)} requirements",
          stage="synthesize", tier=draft.tier)
     return {"draft": draft.model_dump()}
+
+
+def draft_problems(d: "GuideDraft") -> list[str]:
+    """Deterministic quality bar for a draft. Pure function; unit-tested."""
+    p: list[str] = []
+    if len(d.steps) < 5:
+        p.append(f"only {len(d.steps)} steps (need 6-10)")
+    if d.tier >= 3 and not any(s.phase == "review" for s in d.steps):
+        p.append(f"tier {d.tier} but no review-phase step")
+    if d.tier >= 3 and d.time.wait_days_high and d.time.wait_days_high < 7:
+        p.append(f"tier {d.tier} but wait is under a week")
+    if d.tier == 1 and d.time.wait_days_low > 0:
+        p.append("tier 1 but a required approval wait")
+    if len(d.requirements) < 2:
+        p.append("fewer than 2 requirements")
+    if not d.blockers:
+        p.append("no blockers")
+    return p
 
 
 _ITEM = re.compile(r"^(steps|requirements|blockers)\[(\d+)\]$")
@@ -392,15 +422,18 @@ async def finalize(state: AgentState) -> dict:
     useful = [p for p in pages if p["sid"] in cited or (exs.get(p["sid"]) or {}).get("facts")]
     sources = [Source(id=p["sid"], title=p["title"] or p["url"], url=p["url"], kind=p["kind"], accessed=today) for p in useful]
     sources += _probe_sources(probes)
-    unverified = list(dict.fromkeys([*crit.get("unverified", []), *state.get("warnings", [])]))
+    warnings = state.get("warnings", [])
+    unread = [w for w in warnings if w.startswith("Could not read")]
+    unverified = list(dict.fromkeys([*crit.get("unverified", []), *[w for w in warnings if w not in unread]]))
     guide = Guide(
         slug=ident.slug, app_name=ident.app_name, website=ident.website,
         **{k: v for k, v in draft.items() if k in GuideDraft.model_fields},
         sources=sources, probes=[Probe(**p) for p in probes],
         verification=Verification(
             status="agent_generated", checked_on=today,
-            method=("LLM verifier re-checked each claim against extracted facts and probes; deterministic guards "
-                    "removed unknown citations and downgraded unsupported 'tested'/'sourced' claims."),
+            method=("A separate verifier pass re-checked each claim against the extracted facts and live probes; "
+                    "code-level guards removed citations to unread pages and downgraded unsupported claims."
+                    + (f" {len(unread)} search results could not be read (blocked or missing) and were skipped." if unread else "")),
             corrections=[Correction(**c) for c in crit.get("corrections", [])],
             unverified=unverified),
         method="live_agent", model=settings.model,

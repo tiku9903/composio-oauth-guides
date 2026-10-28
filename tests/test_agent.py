@@ -131,3 +131,21 @@ def test_relevance_filter_drops_lookalike_products():
     figma = SearchHit("Pending OAuth App Approval | Figma Forum", "https://forum.figma.com/t/1", "", "q")
     assert is_relevant(keep, ident) and is_relevant(official, ident)
     assert not is_relevant(calendly, ident) and not is_relevant(figma, ident)
+
+
+def test_quality_bar_flags_the_paypal_style_thin_draft():
+    """Real failure seen live: tier 3 'formal review', 3 steps, 1-3 day wait, no review step, no blockers."""
+    thin = GuideDraft(
+        tagline="Connect PayPal to AI agents using custom OAuth credentials.", tier=3, tier_reason="x",
+        time=TimeEstimate(active_effort="20-40 min", active_hours_low=0.3, active_hours_high=0.7, wait="1-3 days",
+                          wait_days_low=1, wait_days_high=3, summary="x"),
+        composio=ComposioStatus(), oauth=OAuthDetails(), start_here="x",
+        steps=[Step(phase="prepare", title="a", owner="you", detail="x"),
+               Step(phase="register", title="b", owner="you", detail="x"),
+               Step(phase="configure", title="c", owner="you", detail="x")],
+        requirements=[Requirement(title="r", detail="x")])
+    problems = G.draft_problems(thin)
+    assert any("only 3 steps" in p for p in problems)
+    assert any("no review-phase step" in p for p in problems)
+    assert any("under a week" in p for p in problems)
+    assert "no blockers" in problems
