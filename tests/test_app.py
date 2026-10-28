@@ -97,3 +97,12 @@ def test_authorize_interpretation():
     assert _interpret_authorize(400, "https://x/authorize", "Error: invalid_client", None)[1] is True
     assert _interpret_authorize(302, "https://x", "", "https://cb?error=unauthorized_client")[1] is True
     assert _interpret_authorize(404, "https://x/authorize", "", None)[1] is False
+
+
+def test_provider_hosted_forums_are_community():
+    from oauthguides.tools.search import classify_url
+    doms = ["vercel.com"]
+    assert classify_url("https://vercel.com/docs/integrations/oauth", doms) == "official_docs"
+    assert classify_url("https://community.vercel.com/t/how-to-create-oauth/123", doms) == "community"
+    assert classify_url("https://vercel.com/community/discussions/1", doms) == "community"
+    assert classify_url("https://vercel.com/legal/terms", doms) == "official_policy"

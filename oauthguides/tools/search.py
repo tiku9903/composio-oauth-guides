@@ -36,6 +36,11 @@ def classify_url(url: str, official_domains: list[str]) -> str:
         return "composio_docs"
     if any(host == d or host.endswith("." + d) for d in official_domains):
         path = urlparse(url).path.lower()
+        # Forums and Q&A hosted on the provider's own domain are user-written, not official statements.
+        if any(k in host.split(".")[0] for k in ("community", "forum", "forums", "discuss")) or any(
+            k in path for k in ("/community", "/discussions", "/forum", "/t/", "/questions/")
+        ):
+            return "community"
         if any(k in path for k in ("policy", "policies", "terms", "legal", "guidelines")):
             return "official_policy"
         return "official_docs"
