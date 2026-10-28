@@ -22,6 +22,7 @@ import json
 import operator
 import re
 from collections import Counter
+from contextlib import asynccontextmanager
 from datetime import date
 from typing import Annotated, Any, Optional, TypedDict
 from urllib.parse import urlparse
@@ -30,7 +31,7 @@ from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 
 from ..config import COMPOSIO_REDIRECT_URI, settings
-from ..llm import structured
+from ..llm import call_structured
 from ..schema import Correction, Guide, Probe, Source, Verification
 from ..store import GuideStore, slugify
 from ..tools.fetch import fetch_many
@@ -61,6 +62,27 @@ def emit(kind: str, message: str, **data: Any) -> None:
     except Exception:
         return
     writer({"kind": kind, "message": message, **data})
+
+
+def _warn(stage: str):
+    return lambda msg: emit("warn", msg, stage=stage)
+
+
+@asynccontextmanager
+async def heartbeat(message: str, stage: str, every: float = 20):
+    """Emit a progress line every `every` seconds while a long model call runs."""
+    async def beat():
+        waited = 0
+        while True:
+            await asyncio.sleep(every)
+            waited += every
+            emit("beat", f"{message}… {int(waited)}s", stage=stage)
+
+    task = asyncio.create_task(beat())
+    try:
+        yield
+    finally:
+        task.cancel()
 
 
 def _ctx(app: str) -> str:
@@ -143,9 +165,9 @@ async def resolve(state: AgentState) -> dict:
     emit("stage", f"Identifying “{q}”", stage="resolve")
     hits = await search(f"{q} developer OAuth app client ID", n=6)
     hits_txt = "\n".join(f"- {h.title} — {h.url} — {h.snippet[:200]}" for h in hits) or "(search unavailable)"
-    ident: AppIdentity = await structured(AppIdentity, "fast").ainvoke(
-        prompts.RESOLVE.format(context=_ctx(q), query=q, hits=hits_txt)
-    )
+    ident: AppIdentity = await call_structured(
+        AppIdentity, prompts.RESOLVE.format(context=_ctx(q), query=q, hits=hits_txt),
+        "fast", "resolve", _warn("resolve"))
     ident.slug = slugify(ident.slug or ident.app_name)
     doms = {d.lower().removeprefix("www.") for d in ident.official_domains if d}
     if (w := _domain(ident.website)):
@@ -205,15 +227,14 @@ async def research(state: AgentState) -> dict:
 async def extract(state: AgentState) -> dict:
     ident = AppIdentity(**state["identity"])
     pages = state.get("pages", [])
-    runner = structured(PageExtraction, "fast")
     sem = asyncio.Semaphore(max(1, settings.extract_concurrency))
 
     async def one(p: dict) -> tuple[str, dict]:
         async with sem:
             try:
-                ex: PageExtraction = await runner.ainvoke(prompts.EXTRACT.format(
+                ex: PageExtraction = await call_structured(PageExtraction, prompts.EXTRACT.format(
                     context=_ctx(ident.app_name), sid=p["sid"], url=p["url"], kind=p["kind"],
-                    app=ident.app_name, text=p["text"]))
+                    app=ident.app_name, text=p["text"]), "fast", f"extract {p['sid']}")
             except Exception as e:
                 emit("warn", f"{p['sid']}: extraction failed ({type(e).__name__})", stage="extract")
                 return p["sid"], PageExtraction(relevant=False).model_dump()
@@ -263,11 +284,13 @@ async def synthesize(state: AgentState) -> dict:
     pages, exs, probes = state.get("pages", []), state.get("extractions", {}), state.get("probes", [])
     composio = next((p for p in probes if p["name"].startswith("Composio")), None)
     emit("stage", "Writing the guide from evidence", stage="synthesize")
-    draft: GuideDraft = await structured(GuideDraft, "main").ainvoke(prompts.SYNTHESIZE.format(
+    prompt = prompts.SYNTHESIZE.format(
         context=_ctx(ident.app_name), redirect=COMPOSIO_REDIRECT_URI,
         identity=ident.model_dump_json(exclude={"search_queries"}),
         composio=json.dumps(composio) if composio else "not checked",
-        probes=_fmt_probes(probes), sources=_fmt_sources(pages), facts=_fmt_facts(pages, exs)))
+        probes=_fmt_probes(probes), sources=_fmt_sources(pages), facts=_fmt_facts(pages, exs))
+    async with heartbeat("Still writing the guide", "synthesize"):
+        draft: GuideDraft = await call_structured(GuideDraft, prompt, "main", "synthesize", _warn("synthesize"))
     emit("draft", f"Draft: tier {draft.tier}, {len(draft.steps)} steps, {len(draft.requirements)} requirements",
          stage="synthesize", tier=draft.tier)
     return {"draft": draft.model_dump()}
@@ -314,9 +337,10 @@ async def verify(state: AgentState) -> dict:
     kinds = {p["sid"]: p["kind"] for p in pages} | {f"P{i}": "probe" for i in range(1, len(probes) + 1)}
     emit("stage", "Verifying every claim against its sources", stage="verify")
     try:
-        crit: Critique = await structured(Critique, "main").ainvoke(prompts.CRITIQUE.format(
-            context=_ctx(ident.app_name), draft=json.dumps(draft)[:60000], probes=_fmt_probes(probes),
-            facts=_fmt_facts(pages, exs)))
+        async with heartbeat("Still verifying", "verify"):
+            crit: Critique = await call_structured(Critique, prompts.CRITIQUE.format(
+                context=_ctx(ident.app_name), draft=json.dumps(draft)[:60000], probes=_fmt_probes(probes),
+                facts=_fmt_facts(pages, exs)), "main", "verify", _warn("verify"))
     except Exception as e:
         emit("warn", f"Critic failed ({type(e).__name__}); applying deterministic checks only", stage="verify")
         crit = Critique()

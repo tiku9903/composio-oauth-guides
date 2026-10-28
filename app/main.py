@@ -21,6 +21,11 @@ from oauthguides.store import GuideStore
 
 from .jobs import JobManager
 
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 HERE = Path(__file__).parent
 app = FastAPI(title="OAuth App Readiness Guides")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")

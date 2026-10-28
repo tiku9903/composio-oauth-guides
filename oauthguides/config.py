@@ -30,6 +30,12 @@ class Settings:
     cache_days: int = int(os.getenv("GUIDE_CACHE_DAYS", "7"))
     # Parallel page-extraction calls. Keep low on free model tiers (requests-per-minute limits).
     extract_concurrency: int = int(os.getenv("EXTRACT_CONCURRENCY", "2"))
+    # Per-request timeout and SDK retries, plus a hard wall-clock cap per agent step.
+    llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "120"))
+    llm_retries: int = int(os.getenv("LLM_RETRIES", "2"))
+    llm_hard_timeout: float = float(os.getenv("LLM_HARD_TIMEOUT", "180"))
+    # Gemini "thinking" level: minimal | low | medium | high, or empty to use the model default.
+    gemini_thinking: str = os.getenv("GEMINI_THINKING", "low")
     user_agent: str = os.getenv(
         "USER_AGENT",
         "Mozilla/5.0 (compatible; OAuthGuideAgent/1.0; +https://github.com/)",
