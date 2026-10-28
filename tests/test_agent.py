@@ -149,3 +149,18 @@ def test_quality_bar_flags_the_paypal_style_thin_draft():
     assert any("no review-phase step" in p for p in problems)
     assert any("under a week" in p for p in problems)
     assert "no blockers" in problems
+
+
+def test_guards_recover_citations_written_only_in_prose():
+    """Live Cal.com run: the verifier confirmed S1/S7 in its note but source_ids was empty, so
+    every step was wrongly downgraded to 'inferred'."""
+    draft = {"steps": [
+        {"evidence": "sourced", "source_ids": [], "evidence_note": "Verifier: Backed by S1 and S7 regarding approval."},
+        {"evidence": "sourced", "source_ids": ["[S2]", "S3, S4"]},
+        {"evidence": "sourced", "source_ids": [], "evidence_note": "Verifier: plausible but S99 doesn't exist."},
+    ], "requirements": [], "blockers": [], "time": {"source_ids": []}}
+    out, _ = G.apply_guards(draft, {"S1": "official_docs", "S2": "official_docs", "S3": "official_docs",
+                                    "S4": "official_docs", "S7": "official_docs"})
+    assert out["steps"][0]["source_ids"] == ["S1", "S7"] and out["steps"][0]["evidence"] == "sourced"
+    assert out["steps"][1]["source_ids"] == ["S2", "S3", "S4"] and out["steps"][1]["evidence"] == "sourced"
+    assert out["steps"][2]["source_ids"] == [] and out["steps"][2]["evidence"] == "inferred"

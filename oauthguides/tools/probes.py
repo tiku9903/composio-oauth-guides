@@ -94,7 +94,8 @@ async def probe_oidc_discovery(domains: list[str]) -> tuple[Probe, dict | None]:
     )
 
 
-def _interpret_authorize(status: int, final_url: str, body_text: str, location: str | None) -> tuple[str, bool | None]:
+def _interpret_authorize(status: int, final_url: str, body_text: str, location: str | None,
+                         requested_url: str = "") -> tuple[str, bool | None]:
     loc_q = parse_qs(urlparse(location).query) if location else {}
     text = body_text.lower()
     if "error" in loc_q:
@@ -103,8 +104,11 @@ def _interpret_authorize(status: int, final_url: str, body_text: str, location: 
                                "unknown client", "does not exist", "not found", "invalid request", "unauthorized_client",
                                "invalid_request", "something went wrong", "doesn't exist", "redirect_uri")):
         return ("Endpoint is live and rejected the unknown client_id (expected).", True)
-    if status in (200, 302, 303) and any(m in final_url.lower() for m in LOGIN_MARKERS):
+    moved = bool(location) and urlparse(final_url).path.rstrip("/") != urlparse(requested_url).path.rstrip("/")
+    if status in (200, 302, 303) and moved and any(m in urlparse(final_url).path.lower() for m in ("login", "signin", "sign-in", "sign_in", "sso", "session")):
         return ("Endpoint is live; it sends unauthenticated users to a login page before validating the client.", True)
+    if status == 200 and not moved:
+        return ("Endpoint is live and serves an authorization page; it didn't reject the fake client before sign-in.", True)
     if status >= 500:
         return ("Endpoint returned a server error for an unknown client.", None)
     if status == 404:
@@ -145,7 +149,7 @@ async def probe_authorize(authorize_url: str, scopes: list[str] | None = None) -
                 ok=None,
                 at=_now(),
             )
-        conclusion, ok = _interpret_authorize(final.status_code, str(final.url), text, location)
+        conclusion, ok = _interpret_authorize(final.status_code, str(final.url), text, location, authorize_url)
         observed = f"HTTP {r.status_code}" + (f" → {final.status_code} at {_short(str(final.url), 120)}" if final is not r else "")
         if text:
             observed += f"; page says: “{_short(text, 160)}”"
@@ -184,6 +188,16 @@ async def probe_console(console_url: str) -> Probe:
                 observed=f"HTTP {r.status_code}",
                 conclusion="Inconclusive: request was blocked (network policy or bot protection).",
                 ok=None,
+                at=_now(),
+            )
+        if r.status_code in (404, 410):
+            return Probe(
+                name="Developer console access",
+                target=console_url,
+                method="GET console URL without a session",
+                observed=f"HTTP {r.status_code} at {_short(final, 140)}",
+                conclusion="URL returned not-found without a session: it may be outdated, or the app hides it until you sign in. Open it while signed in to confirm.",
+                ok=False,
                 at=_now(),
             )
         has_pw = bool(PASSWORD_FIELD.search(r.text or ""))
@@ -252,12 +266,15 @@ async def probe_composio(toolkit_slug: str) -> Probe:
         api_note = f" (API check failed: {observed})"
     else:
         api_note = ""
-    base = f"https://docs.composio.dev/toolkits/{slug.replace('_', '-')}"
+    variants = list(dict.fromkeys([slug.replace("_", "-"), slug.replace("_", ""), slug.split("_")[0]]))
+    base = f"https://docs.composio.dev/toolkits/{variants[0]}"
     text, url, status = "", base, 0
     try:
         async with client() as c:
             # The docs site renders client-side; its .md variant carries the real content.
-            for candidate in (base + ".md", base):
+            # Toolkit slugs vary ("cal-com" vs "cal"), so try a few spellings.
+            tries = [f"https://docs.composio.dev/toolkits/{v}{ext}" for v in variants for ext in (".md", "")]
+            for candidate in tries:
                 r = await c.get(candidate)
                 status, url = r.status_code, candidate
                 if r.status_code == 200:

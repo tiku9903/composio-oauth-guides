@@ -329,14 +329,21 @@ def draft_problems(d: "GuideDraft") -> list[str]:
 _ITEM = re.compile(r"^(steps|requirements|blockers)\[(\d+)\]$")
 
 
+_ID = re.compile(r"\b[SP]\d{1,3}\b")
+
+
 def apply_guards(draft: dict, source_kinds: dict[str, str]) -> tuple[dict, list[str]]:
     """Deterministic evidence rules. Returns (draft, notes). Pure function; unit-tested."""
     notes: list[str] = []
     known = set(source_kinds)
     for section in ("steps", "requirements", "blockers"):
         for i, item in enumerate(draft.get(section, [])):
-            ids = [s for s in item.get("source_ids", []) if s in known]
-            dropped = set(item.get("source_ids", [])) - set(ids)
+            raw = [t for x in item.get("source_ids", []) for t in _ID.findall(str(x).upper())]
+            if not raw:
+                # Models sometimes cite only in prose ("backed by S1 and S7"); keep ids that exist.
+                raw = [t for t in _ID.findall((item.get("evidence_note") or "").upper()) if t in known]
+            ids = list(dict.fromkeys(s for s in raw if s in known))
+            dropped = set(raw) - set(ids)
             if dropped:
                 notes.append(f"{section}[{i}]: removed unknown source ids {sorted(dropped)}")
             item["source_ids"] = ids
@@ -385,6 +392,8 @@ async def verify(state: AgentState) -> dict:
             continue
         it = items[idx]
         before = it.get("evidence")
+        if adj.source_ids:
+            it["source_ids"] = list(dict.fromkeys([*it.get("source_ids", []), *adj.source_ids]))
         it["evidence"] = adj.evidence
         it["evidence_note"] = ((it.get("evidence_note") or "") + f" Verifier: {adj.note}").strip()
         if adj.corrected_text:

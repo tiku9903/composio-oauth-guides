@@ -54,10 +54,14 @@ def _num(x: float) -> str:
 
 def short_effort(g: Guide) -> str:
     lo, hi = g.time.active_hours_low, g.time.active_hours_high
+    def mins(h: float) -> int:
+        return max(5, int(5 * round(h * 60 / 5)))
+
     if hi < 1:
-        return f"{round(lo * 60)}–{round(hi * 60)} min"
+        a, b = mins(lo), mins(hi)
+        return f"{a} min" if a == b else f"{a}–{b} min"
     if lo < 1:
-        return f"{round(lo * 60)} min–{_num(hi)} h"
+        return f"{mins(lo)} min–{_num(hi)} h"
     return f"{_num(lo)}–{_num(hi)} h"
 
 

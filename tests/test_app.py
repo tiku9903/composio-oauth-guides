@@ -106,3 +106,20 @@ def test_provider_hosted_forums_are_community():
     assert classify_url("https://community.vercel.com/t/how-to-create-oauth/123", doms) == "community"
     assert classify_url("https://vercel.com/community/discussions/1", doms) == "community"
     assert classify_url("https://vercel.com/legal/terms", doms) == "official_policy"
+
+
+def test_effort_rounding_matches_writer_text():
+    g = store.get("gmail").model_copy(deep=True)
+    g.time.active_hours_low, g.time.active_hours_high = 0.3, 0.5   # 18 and 30 minutes
+    from oauthguides.render import short_effort
+    assert short_effort(g) == "20–30 min"
+
+
+def test_authorize_probe_does_not_mistake_auth_path_for_login():
+    # Cal.com: /auth/oauth2/authorize served 200 with no redirect -> not a login redirect.
+    msg, ok = _interpret_authorize(200, "https://app.cal.com/auth/oauth2/authorize?x=1", "Authorize | Cal.com", None,
+                                   "https://app.cal.com/auth/oauth2/authorize")
+    assert ok is True and "login" not in msg
+    msg, ok = _interpret_authorize(200, "https://x.com/login?next=/oauth/authorize", "Sign in", "/login?next=1",
+                                   "https://x.com/oauth/authorize")
+    assert "login page" in msg

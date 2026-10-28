@@ -55,8 +55,8 @@
               <h3>{{ s.title|mdi }}</h3>
               <div class="meta">
                 <span class="who {{ s.owner }}">{{ OWNER_LABELS[s.owner] }}</span>
-                {% if s.effort %}<span>{{ s.effort }}</span>{% endif %}
-                {% if s.wait %}<span>Wait {{ s.wait }}</span>{% endif %}
+                {% if s.effort and s.effort|lower|trim not in ['0 min','0','0m','none','n/a','-'] %}<span>{{ s.effort }}</span>{% endif %}
+                {% if s.wait and s.wait|lower|trim not in ['none','0','0 days','n/a','-','no wait'] %}<span>Wait {{ s.wait }}</span>{% endif %}
                 {{ ev(s.evidence, s.source_ids, src) }}
               </div>
               <div class="detail">{{ s.detail|md }}</div>

@@ -44,6 +44,7 @@ SYNTHESIZE = """\
 You are writing the setup guide a developer will follow and forward to a teammate. Use ONLY the \
 evidence below. Cite source ids (S#) for documents and probe ids (P#) for live probes.
 
+Put citations in the source_ids list of each step/requirement/blocker (e.g. ["S1","P2"]), never only in text.
 Evidence levels — be strict, the product's credibility depends on it:
 - "tested": ONLY when a live probe (P#) observed it. Cite the P#.
 - "sourced": a cited S# fact states it. Cite the S#.
@@ -103,7 +104,7 @@ its evidence level is justified by the cited sources/probes and the extracted fa
 anything overclaimed; never upgrade to "tested" without a P# probe. Flag factual statements that \
 contradict a source. Check the tier and time estimate are consistent with the requirements \
 (e.g. a restricted-scope security assessment can't be "1-3 days"). List things that remain \
-unverified and good questions to ask the provider. Be concise; only list items that need change.
+unverified and good questions to ask the provider. For every item whose citations are missing or wrong but which IS supported, return an adjustment with the correct source_ids (S#/P#). Be concise; only list items that need change.
 
 DRAFT GUIDE (JSON):
 {draft}

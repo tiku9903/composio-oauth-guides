@@ -77,6 +77,7 @@ class Adjustment(BaseModel):
     evidence: EvidenceLevel
     note: str = Field(description="Why; what is wrong or what would confirm it")
     corrected_text: Optional[str] = Field(default=None, description="If the statement itself is wrong, the corrected statement")
+    source_ids: list[str] = Field(default_factory=list, description="The S#/P# ids that actually support the item, if any")
 
 
 class Critique(BaseModel):
